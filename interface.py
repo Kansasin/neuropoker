@@ -1,11 +1,12 @@
 import os
 import config
+import game_settings as game
 
 border = '\n--------------------------------------------------\n'
 
 
 class Menu:
-    def __init__(self, label, options, text_input, current_value_func=None):
+    def __init__(self, label, options, text_input, current_value_func=None):  # переделать отображение label (проверка фукнции или строки)
         self.label = label
         self.options = [Option(*x) for x in options]
         self.text_input = text_input
@@ -117,12 +118,40 @@ def start_play():
     menu_list['main_menu'].print_menu()
 
 
-def game_command_menu():
-    menu_list['game_command_menu'].print_menu()
+def game_initialization_menu():
+    menu_list['game_initialization_menu'].print_menu()
 
 
-def game_round_menu():
-    menu_list['game_round_menu'].print_menu()
+def game_preflop_distribution_menu():
+    game.ROUND = 0
+    menu_list['game_preflop_distribution_menu'].print_menu()
+
+
+def game_preflop_bet_menu():
+    game.ROUND = 1
+    menu_list['game_preflop_bet_menu'].print_menu()
+
+
+def game_flop_distribution_menu():
+    game.ROUND = 2
+    menu_list['game_flop_distribution_menu'].print_menu()
+
+
+def game_pause_menu():
+    menu_list['game_pause_menu'].print_menu()
+
+
+def return_to_game():
+    rounds = [  'game_preflop_distribution_menu', 'game_preflop_bet_menu',
+                'game_flop_distribution_menu', 'game_flop_bet_menu',
+                'game_turn_distribution_menu', 'game_turn_bet_menu',
+                'game_river_distribution_menu', 'game_river_bet_menu',
+                'game_showdown_menu']
+    menu_list[rounds[game.ROUND]].print_menu()
+
+
+def pause_rules_menu():
+    menu_list['pause_rules_menu'].print_menu()
 
 
 def learning_bots_number_check(x):
@@ -264,19 +293,29 @@ def db_settings_check(x):
     return False
 
 
-def game_command_check(x):
-    x = x.split(' ')
-    if (not x[0].isdigit() or x[0] == '') or x[1] and (not x[1].isdigit() or x[1] == ''):
-        game_command_menu()
+def game_initialization_check(x):
+    if x.isdigit() and 1 <= int(x) <= 3:
         return True
-    elif int(x[0]) == 1 and 50 <= int(x[1]) <= 1000000:
-        game_round_menu()
+    game_initialization_menu()
+    return False
+
+
+def game_preflop_distribution_check(x):
+    if x.isdigit() and 1 <= int(x) <= 2:
         return True
+    game_preflop_distribution_menu()
+    return False
+
+
+def game_preflop_bet_check(x):
+    if x.isdigit() and 1 <= int(x) <= 5:
+        return True
+    game_preflop_bet_menu()
     return False
 
 
 menu_list = {
-    # '': Menu('', [], Text_input('', lambda x: x)),
+    # '': Menu('', [], TextInput('', lambda x: x)),
     'main_menu': Menu('Главное меню:', [
         ['Игра с ботами', game_settings_menu],
         ['Обучение ботов', learn_settings_menu],
@@ -307,7 +346,7 @@ menu_list = {
     ], TextInput('Выберите номер команды: ', game_settings_check)),
     'bots_number_menu': Menu(f'Настройки игры: Количество ботов', [], TextInput('Введите количество ботов (1-9): ', bots_number_check), lambda: config.BOTS_NUMBER),
     'bots_names_menu': Menu('Настройки игры: Имена ботов', [], TextInput('Введите новые имена ботов через пробел: ', bots_names_check)),
-    'min_bet_menu': Menu(f'Настройки игры: Минимальная ставка', [], TextInput('Введите минимальную ставку (50-1000000): ', min_bet_check), lambda: config.MIN_BET),
+    'min_bet_menu': Menu(f'Настройки игры: Минимальная ставка', [], TextInput('Введите минимальную ставку (50-1000000): ', min_bet_check), lambda: game.GAME_MIN_BET),
     'rules_menu': Menu('Настройки игры: Правила игры', [], TextInput('Введите Хоп-хей-ла-лей, чтобы продолжить: ', rules_check), lambda: config.RULES),
 
     'db_settings_menu': Menu('Настройки базы данных', [
@@ -321,14 +360,29 @@ menu_list = {
     'export_db_menu': Menu('Настройки базы данных: Путь до последнего экпортированного файла базы данных', [], TextInput('Введите путь сохранения базы данных: ', export_db_check), lambda: config.EXPORT_PATH),
     'erase_db_menu': Menu('Настройки базы данных: Очистка файла базы данных', [], TextInput('Файл базы данных будет очищен. Вы уверены? ', erase_db_check), lambda: config.DB_PATH),
 
-    'game_command_menu': Menu('Выберите действие', [
-        ['Поднять', game_round_menu],
-        ['Уравнять', game_round_menu],
-        ['Ва-банк', game_round_menu],
-        ['Пропустить', game_round_menu],
-        ['Сбросить', game_round_menu],
-        ['Помощь', game_round_menu],
-    ], TextInput('Введите номер команды и ставку:', game_command_check)),
+    'game_initialization_menu': Menu(f'Настройка...\nОчередь: {game.INITIAL_QUEUE}, USR_Igor\nМинимальная ставка: {game.GAME_MIN_BET}\nВремя обучения ботов: ', [
+        ['Начать игру', game_preflop_distribution_menu],
+        ['Вернуться к Настройкам игры', game_settings_menu],
+        ['Вернуться в Главное меню', main_menu],
+    ], TextInput('Введите номер команды:', game_initialization_check)),
+    'game_preflop_distribution_menu': Menu(f'Префлоп - раздача - банк', [
+        ['Продолжить', game_preflop_bet_menu],
+        ['Пауза', game_pause_menu],
+    ], TextInput('Введите номер команды: ', game_preflop_distribution_check), lambda: game.BANK),
+    'game_preflop_bet_menu': Menu(f'Префлоп - ставки - банк', [
+        ['Поднять', game_flop_distribution_menu],
+        ['Уравнять', game_flop_distribution_menu],
+        ['Ва-банк', game_flop_distribution_menu],
+        ['Сбросить', game_flop_distribution_menu],
+        ['Пауза', game_pause_menu],
+    ], TextInput('Введите номер команды: ', game_preflop_bet_check), lambda: game.BANK),
+
+    'game_pause_menu': Menu(f'Пауза', [
+        ['Продолжить', return_to_game],
+        ['Помощь', pause_rules_menu],
+        ['Вернуться в Главное меню', main_menu],
+    ], TextInput('Введите номер команды: ', lambda x: x)),
+    'pause_rules_menu': Menu('Правила игры', [], TextInput('Введите Хоп-хей-ла-лей, чтобы продолжить: ', rules_check), lambda: config.RULES),
 }
 
 

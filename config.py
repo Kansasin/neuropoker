@@ -1,11 +1,12 @@
-MIN_BET = 100  # минимальная ставка
+MIN_BET = 100  # минимальная ставка  # перенести в game_settings
 BOTS_NAMES = ''  # имена ботов через пробел
 
-BOTS_NUMBER = 5  # количество ботов в игре
-PLAYERS_NUMBER = 6  # количество игроков в игре
+BOTS_NUMBER = 5  # количество ботов в игре  # перенести в game_settings
+PLAYERS_NUMBER = 6  # количество игроков в игре  # перенести в game_settings
 
 SERIES_LENGTH = 5  # длина обучающей серии игр
 SERIES_NUMBER = 1000000  # количество серий
+BOTS_LEARNING_SERIES_LENGTH = 0  # время обучения ботов
 AUTOSAVES_FREQUENCY = 15  # частота автосохранений
 
 IMPORT_PATH = ''  # последний импортированный файл
