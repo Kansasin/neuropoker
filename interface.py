@@ -21,7 +21,7 @@ class Menu:
         if len(self.options) == 0: return self.text_input.print_input()
         options_str = ''
         for i in range(len(self.options)):
-            options_str += f'{i + 1}. {self.options[i].text}\n'
+            options_str += f'{i + 1}. {self.options[i].get_text()}\n'
         print('\n' + options_str + '\n')
         self.options[int(self.text_input.print_input()) - 1].callback()
 
@@ -30,12 +30,18 @@ class Option:
     def __init__(self, text, callback):
         self.text = text
         self.callback = callback
-
+    def get_text(self):
+        if type(self.text) == type(lambda: 0): return self.text()
+        elif type(self.text) == type(''): return self.text
 
 class TextInput:
     def __init__(self, input_text, check):
-        self.input_text = input_text
+        self.input_text = input_text  # может быть как просто строкой, так и функцией, чтобы отображать в текстовом поле меняющиеся данные
         self.check = check
+
+    def get_input_text(self):
+        if type(self.input_text) == type(lambda: 0): return self.input_text()
+        elif type(self.input_text) == type(''): return self.input_text
 
     def print_input(self):
         is_good = False
