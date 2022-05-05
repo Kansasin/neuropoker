@@ -6,14 +6,14 @@ border = '\n--------------------------------------------------\n'
 
 
 class Menu:
-    def __init__(self, label, options, text_input, current_value_func=None):  # переделать отображение label (проверка фукнции или строки)
-        self.label = label
+    def __init__(self, label, options, text_input):
+        self.label = label  # может быть как просто строкой, так и функцией, чтобы отображать в меню меняющиеся данные
         self.options = [Option(*x) for x in options]
         self.text_input = text_input
-        self.current_value_func = current_value_func
 
     def get_label(self):
-        return f'{self.label}{" - " if self.current_value_func else ""}{self.current_value_func() if self.current_value_func else ""}'
+        if type(self.label) == type(lambda: 0): return self.label()
+        elif type(self.label) == type(''): return self.label
 
     def print_menu(self, cls=True):
         if cls: os.system('cls')
@@ -335,10 +335,10 @@ menu_list = {
         ['Начать обучение', start_learning_menu],
         ['Вернуться в Главное меню', main_menu]
     ], TextInput('Выберите номер команды: ', learn_settings_check)),
-    'learning_bots_number_menu': Menu(f'Настройки обучения: Количество ботов', [], TextInput('Введите количество ботов (1-10): ', learning_bots_number_check), lambda: game.PLAYERS_NUMBER),
-    'series_length_menu': Menu(f'Настройки обучения: Длина серии игр', [], TextInput('Введите длину серии игр (1-30): ', series_length_check), lambda: config.SERIES_LENGTH),
-    'series_number_menu': Menu(f'Настройки обучения: Количество серий игр', [], TextInput('Введите количество обучающих серий (1-10000000): ', series_number_check), lambda: config.SERIES_NUMBER),
-    'autosaves_frequency_menu': Menu('Настройки обучения: Частота автосохранений', [], TextInput('Введите частоту автосохранений (до 120 минут): ', autosaves_frequency_check), lambda: config.AUTOSAVES_FREQUENCY),
+    'learning_bots_number_menu': Menu(lambda: f'Настройки обучения: Количество ботов - {game.PLAYERS_NUMBER}', [], TextInput('Введите количество ботов (1-10): ', learning_bots_number_check)),
+    'series_length_menu': Menu(lambda: f'Настройки обучения: Длина серии игр - {config.SERIES_LENGTH}', [], TextInput('Введите длину серии игр (1-30): ', series_length_check)),
+    'series_number_menu': Menu(lambda: f'Настройки обучения: Количество серий игр - {config.SERIES_NUMBER}', [], TextInput('Введите количество обучающих серий (1-10000000): ', series_number_check)),
+    'autosaves_frequency_menu': Menu(lambda: f'Настройки обучения: Частота автосохранений - {config.AUTOSAVES_FREQUENCY}', [], TextInput('Введите частоту автосохранений (до 120 минут): ', autosaves_frequency_check)),
 
     'game_settings_menu': Menu('Настройки игры:', [
         ['Количество ботов', bots_number_menu],
@@ -348,10 +348,10 @@ menu_list = {
         ['Начать игру', game_initialization_menu],
         ['Вернуться в Главное меню', main_menu]
     ], TextInput('Выберите номер команды: ', game_settings_check)),
-    'bots_number_menu': Menu(f'Настройки игры: Количество ботов', [], TextInput('Введите количество ботов (1-9): ', bots_number_check), lambda: game.PLAYERS_NUMBER - 1),
+    'bots_number_menu': Menu(lambda: f'Настройки игры: Количество ботов - {game.PLAYERS_NUMBER - 1}', [], TextInput('Введите количество ботов (1-9): ', bots_number_check)),
     'bots_names_menu': Menu('Настройки игры: Имена ботов', [], TextInput('Введите новые имена ботов через пробел: ', bots_names_check)),
-    'min_bet_menu': Menu(f'Настройки игры: Минимальная ставка', [], TextInput('Введите минимальную ставку (50-1000000): ', min_bet_check), lambda: game.GAME_MIN_BET),
-    'rules_menu': Menu('Настройки игры: Правила игры', [], TextInput('Введите Хоп-хей-ла-лей, чтобы продолжить: ', rules_check), lambda: config.RULES),
+    'min_bet_menu': Menu(lambda: f'Настройки игры: Минимальная ставка - {game.GAME_MIN_BET}', [], TextInput('Введите минимальную ставку (50-1000000): ', min_bet_check)),
+    'rules_menu': Menu(lambda: f'Настройки игры: Правила игры - {config.RULES}', [], TextInput('Введите Хоп-хей-ла-лей, чтобы продолжить: ', rules_check)),
 
     'db_settings_menu': Menu('Настройки базы данных', [
         ['Импорт базы данных', import_db_menu],
@@ -360,33 +360,33 @@ menu_list = {
         ['Вернуться в Настройки обучения', game_settings_menu],
         ['Вернуться в Главное меню', main_menu],
     ], TextInput('Выберите номер команды: ', db_settings_check)),
-    'import_db_menu': Menu('Настройки базы данных: Путь до последнего импортированного файла базы данных', [], TextInput('Введите путь до импортируемой базы данных: ', import_db_check), lambda: config.IMPORT_PATH),
-    'export_db_menu': Menu('Настройки базы данных: Путь до последнего экпортированного файла базы данных', [], TextInput('Введите путь сохранения базы данных: ', export_db_check), lambda: config.EXPORT_PATH),
-    'erase_db_menu': Menu('Настройки базы данных: Очистка файла базы данных', [], TextInput('Файл базы данных будет очищен. Вы уверены? ', erase_db_check), lambda: config.DB_PATH),
+    'import_db_menu': Menu(lambda: f'Настройки базы данных: Путь до последнего импортированного файла базы данных - {config.IMPORT_PATH}', [], TextInput('Введите путь до импортируемой базы данных: ', import_db_check)),
+    'export_db_menu': Menu(lambda: f'Настройки базы данных: Путь до последнего экпортированного файла базы данных - {config.EXPORT_PATH}', [], TextInput('Введите путь сохранения базы данных: ', export_db_check)),
+    'erase_db_menu': Menu(lambda: f'Настройки базы данных: Очистка файла базы данных - {config.DB_PATH}', [], TextInput('Файл базы данных будет очищен. Вы уверены? ', erase_db_check)),
 
-    'game_initialization_menu': Menu(f'Настройка...\nОчередь: {game.INITIAL_QUEUE}\nМинимальная ставка: {game.GAME_MIN_BET}\nВремя обучения ботов: {config.BOTS_LEARNING_SERIES_LENGTH}', [
+    'game_initialization_menu': Menu(lambda: f'Настройка...\nОчередь: {game.INITIAL_QUEUE}\nМинимальная ставка: {game.GAME_MIN_BET}\nВремя обучения ботов: {config.BOTS_LEARNING_SERIES_LENGTH}', [
         ['Начать игру', game_preflop_distribution_menu],
         ['Вернуться к Настройкам игры', game_settings_menu],
         ['Вернуться в Главное меню', main_menu],
     ], TextInput('Введите номер команды: ', game_initialization_check)),
-    'game_preflop_distribution_menu': Menu(f'Префлоп - раздача - банк', [
+    'game_preflop_distribution_menu': Menu(lambda: f'Префлоп - раздача - банк {game.BANK}', [
         ['Продолжить', game_preflop_bet_menu],
         ['Пауза', game_pause_menu],
-    ], TextInput('Введите номер команды: ', game_preflop_distribution_check), lambda: game.BANK),
-    'game_preflop_bet_menu': Menu(f'Префлоп - ставки - банк', [
+    ], TextInput('Введите номер команды: ', game_preflop_distribution_check)),
+    'game_preflop_bet_menu': Menu(lambda: f'Префлоп - ставки - банк {game.BANK}', [
         ['Поднять', game_flop_distribution_menu],
         ['Уравнять', game_flop_distribution_menu],
         ['Ва-банк', game_flop_distribution_menu],
         ['Сбросить', game_flop_distribution_menu],
         ['Пауза', game_pause_menu],
-    ], TextInput('Введите номер команды: ', game_preflop_bet_check), lambda: game.BANK),
+    ], TextInput('Введите номер команды: ', game_preflop_bet_check)),
 
     'game_pause_menu': Menu(f'Пауза', [
         ['Продолжить', return_to_game],
         ['Помощь', pause_rules_menu],
         ['Вернуться в Главное меню', main_menu],
     ], TextInput('Введите номер команды: ', lambda x: x)),
-    'pause_rules_menu': Menu('Правила игры', [], TextInput('Введите Хоп-хей-ла-лей, чтобы продолжить: ', pause_rules_check), lambda: config.RULES),
+    'pause_rules_menu': Menu(lambda: f'Пауза: Правила игры - {config.RULES}', [], TextInput('Введите Хоп-хей-ла-лей, чтобы продолжить: ', pause_rules_check)),
 }
 
 
