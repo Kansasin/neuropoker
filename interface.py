@@ -39,6 +39,7 @@ class TextInput:
 
     def print_input(self):
         is_good = False
+        answer = ''
         while not is_good:
             answer = input(self.input_text)
             is_good = self.check(answer)
@@ -224,7 +225,7 @@ def min_bet_check(x):
         game_settings_menu()
         return True
     elif 50 <= int(x) <= 1000000:
-        config.MIN_BET = int(x)
+        game.GAME_MIN_BET = int(x)
         game_settings_menu()
         return True
     return False
@@ -334,7 +335,7 @@ menu_list = {
         ['Начать обучение', start_learning_menu],
         ['Вернуться в Главное меню', main_menu]
     ], TextInput('Выберите номер команды: ', learn_settings_check)),
-    'learning_bots_number_menu': Menu(f'Настройки обучения: Количество ботов', [], TextInput('Введите количество ботов (1-10): ', learning_bots_number_check), lambda: config.PLAYERS_NUMBER),
+    'learning_bots_number_menu': Menu(f'Настройки обучения: Количество ботов', [], TextInput('Введите количество ботов (1-10): ', learning_bots_number_check), lambda: game.PLAYERS_NUMBER),
     'series_length_menu': Menu(f'Настройки обучения: Длина серии игр', [], TextInput('Введите длину серии игр (1-30): ', series_length_check), lambda: config.SERIES_LENGTH),
     'series_number_menu': Menu(f'Настройки обучения: Количество серий игр', [], TextInput('Введите количество обучающих серий (1-10000000): ', series_number_check), lambda: config.SERIES_NUMBER),
     'autosaves_frequency_menu': Menu('Настройки обучения: Частота автосохранений', [], TextInput('Введите частоту автосохранений (до 120 минут): ', autosaves_frequency_check), lambda: config.AUTOSAVES_FREQUENCY),
@@ -347,7 +348,7 @@ menu_list = {
         ['Начать игру', game_initialization_menu],
         ['Вернуться в Главное меню', main_menu]
     ], TextInput('Выберите номер команды: ', game_settings_check)),
-    'bots_number_menu': Menu(f'Настройки игры: Количество ботов', [], TextInput('Введите количество ботов (1-9): ', bots_number_check), lambda: config.BOTS_NUMBER),
+    'bots_number_menu': Menu(f'Настройки игры: Количество ботов', [], TextInput('Введите количество ботов (1-9): ', bots_number_check), lambda: game.PLAYERS_NUMBER - 1),
     'bots_names_menu': Menu('Настройки игры: Имена ботов', [], TextInput('Введите новые имена ботов через пробел: ', bots_names_check)),
     'min_bet_menu': Menu(f'Настройки игры: Минимальная ставка', [], TextInput('Введите минимальную ставку (50-1000000): ', min_bet_check), lambda: game.GAME_MIN_BET),
     'rules_menu': Menu('Настройки игры: Правила игры', [], TextInput('Введите Хоп-хей-ла-лей, чтобы продолжить: ', rules_check), lambda: config.RULES),

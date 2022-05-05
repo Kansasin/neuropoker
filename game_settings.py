@@ -1,5 +1,6 @@
 INITIAL_QUEUE = []  # начальная очередность ходов
 CURRENT_QUEUE = []  # текущая очередность ходов
+PLAYERS_NUMBER = len(INITIAL_QUEUE)  # количество игроков в игре
 LAST_RAISER = 0  # последний поднявший ставку (номер в очереди)
 GAME_MIN_BET = 0  # минимальная ставка игры
 CURRENT_MIN_BET = 0  # текущая минимальная ставка
