@@ -113,12 +113,8 @@ def erase_db_menu():
     menu_list['erase_db_menu'].print_menu()
 
 
-def start_play():
-    # сделать игру
-    menu_list['main_menu'].print_menu()
-
-
 def game_initialization_menu():
+    game.ROUND = 0
     menu_list['game_initialization_menu'].print_menu()
 
 
@@ -314,6 +310,13 @@ def game_preflop_bet_check(x):
     return False
 
 
+def pause_rules_check(x):
+    if len(x) >= 0:
+        game_pause_menu()
+        return True
+    return False
+
+
 menu_list = {
     # '': Menu('', [], TextInput('', lambda x: x)),
     'main_menu': Menu('Главное меню:', [
@@ -341,7 +344,7 @@ menu_list = {
         ['Имена ботов', bots_names_menu],
         ['Минимальная ставка', min_bet_menu],
         ['Правила игры', rules_menu],
-        ['Начать игру', start_play],
+        ['Начать игру', game_initialization_menu],
         ['Вернуться в Главное меню', main_menu]
     ], TextInput('Выберите номер команды: ', game_settings_check)),
     'bots_number_menu': Menu(f'Настройки игры: Количество ботов', [], TextInput('Введите количество ботов (1-9): ', bots_number_check), lambda: config.BOTS_NUMBER),
@@ -360,11 +363,11 @@ menu_list = {
     'export_db_menu': Menu('Настройки базы данных: Путь до последнего экпортированного файла базы данных', [], TextInput('Введите путь сохранения базы данных: ', export_db_check), lambda: config.EXPORT_PATH),
     'erase_db_menu': Menu('Настройки базы данных: Очистка файла базы данных', [], TextInput('Файл базы данных будет очищен. Вы уверены? ', erase_db_check), lambda: config.DB_PATH),
 
-    'game_initialization_menu': Menu(f'Настройка...\nОчередь: {game.INITIAL_QUEUE}, USR_Igor\nМинимальная ставка: {game.GAME_MIN_BET}\nВремя обучения ботов: ', [
+    'game_initialization_menu': Menu(f'Настройка...\nОчередь: {game.INITIAL_QUEUE}\nМинимальная ставка: {game.GAME_MIN_BET}\nВремя обучения ботов: {config.BOTS_LEARNING_SERIES_LENGTH}', [
         ['Начать игру', game_preflop_distribution_menu],
         ['Вернуться к Настройкам игры', game_settings_menu],
         ['Вернуться в Главное меню', main_menu],
-    ], TextInput('Введите номер команды:', game_initialization_check)),
+    ], TextInput('Введите номер команды: ', game_initialization_check)),
     'game_preflop_distribution_menu': Menu(f'Префлоп - раздача - банк', [
         ['Продолжить', game_preflop_bet_menu],
         ['Пауза', game_pause_menu],
@@ -382,7 +385,7 @@ menu_list = {
         ['Помощь', pause_rules_menu],
         ['Вернуться в Главное меню', main_menu],
     ], TextInput('Введите номер команды: ', lambda x: x)),
-    'pause_rules_menu': Menu('Правила игры', [], TextInput('Введите Хоп-хей-ла-лей, чтобы продолжить: ', rules_check), lambda: config.RULES),
+    'pause_rules_menu': Menu('Правила игры', [], TextInput('Введите Хоп-хей-ла-лей, чтобы продолжить: ', pause_rules_check), lambda: config.RULES),
 }
 
 
