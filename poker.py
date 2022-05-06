@@ -1,14 +1,21 @@
 import random
 import config
+import game_settings as game
 
 
 class Player:
     def __init__(self, name):
         self.name = name
-        self.index = None  # порядок в очереди
+        self.bank = game.DEFAULT_BANK
+
+    def get_index(self): #  использовать только после настройки игры
+        return game.PLAYERS.index(self)
+
+    def get_queue_index(self):
+        return game.CURRENT_QUEUE.index(self.get_index())
 
     def get_cards(self):
-        return [cards[self.index * 2], cards[self.index * 2 + 1]]
+        return [game.CARDS[self.get_index() * 2], game.CARDS[self.get_index() * 2 + 1]]
 
 
 class Bot(Player):
@@ -21,16 +28,18 @@ class User(Player):
         super().__init__(name)
 
 
-players = [Bot('BOT_Oleg'), Bot('BOT_Anton'), User('Igor')]
-shuffle_players = lambda: random.shuffle(players)  # перемешать игроков
+shuffle_players = lambda players: random.shuffle(players)  # перемешать игроков
 
 
-def set_queue():  # настроить очередь
-    for i in range(len(players)):
-        players[i].index = i
+def set_queue(players):  # настроить очередь
+    game.PLAYERS = players
+    game.INITIAL_QUEUE = [i for i in range(game.PLAYERS_NUMBER)]
+    random.shuffle(game.INITIAL_QUEUE)
+    game.CURRENT_QUEUE = game.INITIAL_QUEUE[:]
+    random.shuffle(game.INITIAL_QUEUE)
 
-
-# print([(player.name, player.index) for player in players])
+def shift_queue(index):
+    game.CURRENT_QUEUE = game.INITIAL_QUEUE[index:] + game.INITIAL_QUEUE[:index]
 
 
 class Flush:
@@ -61,19 +70,30 @@ class Card:
         self.icon = rank.icon + flush.name
 
 
-cards = [Card(rank, flush) for rank in ranks for flush in flushes]
-shuffle_cards = lambda: random.shuffle(cards)  # перемешать карты
+shuffle_cards = lambda cards: random.shuffle(cards)  # перемешать карты
 
+
+def set_cards(cards):
+    game.CARDS = cards[:26]
 
 def get_table_cards(stage=None):
     if stage == 'flop':
-        return cards[-4:-1]
+        return game.CARDS[20:23]
     elif stage == 'turn':
-        return cards[-5:-1]
+        return game.CARDS[20:24]
     elif stage == 'river':
-        return cards[-6:-1]
+        return game.CARDS[20:25]
     else:
         return []
-# print(cards[-1].icon)
-# print([card.icon for card in get_table_cards('river')])
-# print([card.icon for card in cards])
+
+
+def set_game():
+    names = config.BOTS_NAMES.split(' ') + config.USER_BOTS_NAMES.split(' ')  # берем все доступные имена
+    random.shuffle(names)  # перемешиваем имена
+    players = [Bot(f'BOT_{names[i]}') for i in range(game.PLAYERS_NUMBER - 1)]  # создаем список игроков из ботов
+    cards = [Card(rank, flush) for rank in ranks for flush in flushes]  # создаем колоду
+    shuffle_cards(cards)  # перемешиваем колоду
+    set_cards(cards)  # настраиваем карты в конфигах
+    shuffle_players(players)  # перемешиваем игроков
+    players += [User('USR_User')]  # добавляем в список игроков пользователя, если игра с пользователем
+    set_queue(players)  # настраиваем игроков и очередь в конфигах

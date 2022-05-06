@@ -1,6 +1,7 @@
 import os
 import config
 import game_settings as game
+import poker
 
 border = '\n--------------------------------------------------\n'
 
@@ -30,6 +31,7 @@ class Option:
     def __init__(self, text, callback):
         self.text = text
         self.callback = callback
+
     def get_text(self):
         if type(self.text) == type(lambda: 0): return self.text()
         elif type(self.text) == type(''): return self.text
@@ -51,6 +53,13 @@ class TextInput:
             is_good = self.check(answer)
         return answer
 
+
+def get_queue_string():
+    queue = [game.PLAYERS[x] for x in game.CURRENT_QUEUE]
+    string = ''
+    for player in queue:
+        string += f'{player.name} - {"м. блайнд" if player.get_queue_index() == 0 else ("б. блайнд" if player.get_queue_index() == 1 else "игрок")} - {player.bank} ф. - [{player.get_cards()[0].icon if player.get_index() == game.PLAYERS_NUMBER - 1 else "XX"}] [{player.get_cards()[1].icon if player.get_index() == game.PLAYERS_NUMBER - 1 else "XX"}]\n'
+    return string
 
 def main_menu():
     menu_list['main_menu'].print_menu()
@@ -102,10 +111,6 @@ def min_bet_menu():
 
 def rules_menu():
     menu_list['rules_menu'].print_menu()
-
-
-def start_play():
-    menu_list['start_play'].print_menu()
 
 
 def import_db_menu():
@@ -162,8 +167,7 @@ def learning_bots_number_check(x):
         learn_settings_menu()
         return True
     elif 1 <= int(x) <= 10:
-        config.BOTS_NUMBER = int(x)
-        config.PLAYERS_NUMBER = int(x)
+        game.PLAYERS_NUMBER = int(x)
         learn_settings_menu()
         return True
     return False
@@ -207,8 +211,7 @@ def bots_number_check(x):
         game_settings_menu()
         return True
     elif 1 <= int(x) <= 9:
-        config.BOTS_NUMBER = int(x)
-        config.PLAYERS_NUMBER = int(x) + 1
+        game.PLAYERS_NUMBER = int(x) + 1
         game_settings_menu()
         return True
     return False
@@ -298,6 +301,7 @@ def db_settings_check(x):
 
 def game_initialization_check(x):
     if x.isdigit() and 1 <= int(x) <= 3:
+        poker.set_game()
         return True
     game_initialization_menu()
     return False
@@ -370,18 +374,18 @@ menu_list = {
     'export_db_menu': Menu(lambda: f'Настройки базы данных: Путь до последнего экпортированного файла базы данных - {config.EXPORT_PATH}', [], TextInput('Введите путь сохранения базы данных: ', export_db_check)),
     'erase_db_menu': Menu(lambda: f'Настройки базы данных: Очистка файла базы данных - {config.DB_PATH}', [], TextInput('Файл базы данных будет очищен. Вы уверены? ', erase_db_check)),
 
-    'game_initialization_menu': Menu(lambda: f'Настройка...\nОчередь: {game.INITIAL_QUEUE}\nМинимальная ставка: {game.GAME_MIN_BET}\nВремя обучения ботов: {config.BOTS_LEARNING_SERIES_LENGTH}', [
+    'game_initialization_menu': Menu(lambda: f'Настройка...\nОчередь: {", ".join([game.PLAYERS[x].name for x in game.INITIAL_QUEUE])}\nМинимальная ставка: {game.GAME_MIN_BET}\nВремя обучения ботов: {config.BOTS_LEARNING_SERIES_LENGTH}', [
         ['Начать игру', game_preflop_distribution_menu],
         ['Вернуться к Настройкам игры', game_settings_menu],
         ['Вернуться в Главное меню', main_menu],
     ], TextInput('Введите номер команды: ', game_initialization_check)),
-    'game_preflop_distribution_menu': Menu(lambda: f'Префлоп - раздача - банк {game.BANK}', [
+    'game_preflop_distribution_menu': Menu(lambda: f'Префлоп - раздача - банк {game.BANK}\n\n{get_queue_string()}', [
         ['Продолжить', game_preflop_bet_menu],
         ['Пауза', game_pause_menu],
     ], TextInput('Введите номер команды: ', game_preflop_distribution_check)),
-    'game_preflop_bet_menu': Menu(lambda: f'Префлоп - ставки - банк {game.BANK}', [
+    'game_preflop_bet_menu': Menu(lambda: f'Префлоп - ставки - банк {game.BANK}\n\n{get_queue_string()}', [
         ['Поднять', game_flop_distribution_menu],
-        ['Уравнять', game_flop_distribution_menu],
+        [lambda: 'Уравнять' if True else 'Пропустить', game_flop_distribution_menu],
         ['Ва-банк', game_flop_distribution_menu],
         ['Сбросить', game_flop_distribution_menu],
         ['Пауза', game_pause_menu],

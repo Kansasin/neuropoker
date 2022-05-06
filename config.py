@@ -1,4 +1,5 @@
-BOTS_NAMES = ''  # имена ботов через пробел
+BOTS_NAMES = 'Oleg Igor Anton Pavel Alexander Egor Ivan Konstantin Ilya Denis Andrey Artem Vlad Vadim Viktor Danil Dmitriy Grigoriy Georgiy Maksim'  # допустимые имена ботов через пробел
+USER_BOTS_NAMES = ''  # пользовательские имена для ботов
 
 SERIES_LENGTH = 5  # длина обучающей серии игр
 SERIES_NUMBER = 1000000  # количество серий
