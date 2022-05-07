@@ -76,19 +76,20 @@ shuffle_cards = lambda cards: random.shuffle(cards)  # перемешать ка
 def set_cards(cards):
     game.CARDS = cards[:26]
 
-def get_table_cards(stage=None):
-    if stage == 'flop':
+def get_table_cards():
+    if game.ROUND in [2, 3]:
         return game.CARDS[20:23]
-    elif stage == 'turn':
+    elif game.ROUND in [4, 5]:
         return game.CARDS[20:24]
-    elif stage == 'river':
+    elif game.ROUND in [6, 7, 8]:
         return game.CARDS[20:25]
     else:
         return []
 
 
 def set_game():
-    names = config.BOTS_NAMES.split(' ') + config.USER_BOTS_NAMES.split(' ')  # берем все доступные имена
+    names = config.BOTS_NAMES.split(' ')  # берем все доступные имена
+    if config.USER_BOTS_NAMES != '': names += config.USER_BOTS_NAMES.split(' ')  # если есть пользовательские имена, то добавляем их в список
     random.shuffle(names)  # перемешиваем имена
     players = [Bot(f'BOT_{names[i]}') for i in range(game.PLAYERS_NUMBER - 1)]  # создаем список игроков из ботов
     cards = [Card(rank, flush) for rank in ranks for flush in flushes]  # создаем колоду

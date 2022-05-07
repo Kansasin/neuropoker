@@ -54,11 +54,17 @@ class TextInput:
         return answer
 
 
-def get_queue_string():
+def get_cards_string(cards, hide=False):
+    string = ''
+    for card in cards:
+        string += f'[{"XX" if hide else card.icon}] '
+    return string
+
+def get_queue_string(hide=True):
     queue = [game.PLAYERS[x] for x in game.CURRENT_QUEUE]
     string = ''
     for player in queue:
-        string += f'{player.name} - {"м. блайнд" if player.get_queue_index() == 0 else ("б. блайнд" if player.get_queue_index() == 1 else "игрок")} - {player.bank} ф. - [{player.get_cards()[0].icon if player.get_index() == game.PLAYERS_NUMBER - 1 else "XX"}] [{player.get_cards()[1].icon if player.get_index() == game.PLAYERS_NUMBER - 1 else "XX"}]\n'
+        string += f'{player.name} - {"м. блайнд" if player.get_queue_index() == 0 else ("б. блайнд" if player.get_queue_index() == 1 else "игрок")} - {player.bank} ф. - {get_cards_string(player.get_cards(), player.get_index() != game.PLAYERS_NUMBER - 1 and hide)}\n'
     return string
 
 def main_menu():
@@ -77,8 +83,8 @@ def db_settings_menu():
     menu_list['db_settings_menu'].print_menu()
 
 
-def learning_bots_number_menu():
-    menu_list['learning_bots_number_menu'].print_menu()
+def learning_players_number_menu():
+    menu_list['learning_players_number_menu'].print_menu()
 
 
 def series_length_menu():
@@ -97,8 +103,8 @@ def start_learning_menu():
     menu_list['start_learning_menu'].print_menu()
 
 
-def bots_number_menu():
-    menu_list['bots_number_menu'].print_menu()
+def players_number_menu():
+    menu_list['players_number_menu'].print_menu()
 
 
 def bots_names_menu():
@@ -143,6 +149,36 @@ def game_preflop_bet_menu():
 def game_flop_distribution_menu():
     game.ROUND = 2
     menu_list['game_flop_distribution_menu'].print_menu()
+
+
+def game_flop_bet_menu():
+    game.ROUND = 3
+    menu_list['game_flop_bet_menu'].print_menu()
+
+
+def game_turn_distribution_menu():
+    game.ROUND = 4
+    menu_list['game_turn_distribution_menu'].print_menu()
+
+
+def game_turn_bet_menu():
+    game.ROUND = 5
+    menu_list['game_turn_bet_menu'].print_menu()
+
+
+def game_river_distribution_menu():
+    game.ROUND = 6
+    menu_list['game_river_distribution_menu'].print_menu()
+
+
+def game_river_bet_menu():
+    game.ROUND = 7
+    menu_list['game_river_bet_menu'].print_menu()
+
+
+def game_showdown_menu():
+    game.ROUND = 8
+    menu_list['game_showdown_menu'].print_menu()
 
 
 def game_pause_menu():
@@ -210,8 +246,8 @@ def bots_number_check(x):
     if not x.isdigit() or x == '':
         game_settings_menu()
         return True
-    elif 1 <= int(x) <= 9:
-        game.PLAYERS_NUMBER = int(x) + 1
+    elif 2 <= int(x) <= 10:
+        game.PLAYERS_NUMBER = int(x)
         game_settings_menu()
         return True
     return False
@@ -320,6 +356,54 @@ def game_preflop_bet_check(x):
     game_preflop_bet_menu()
     return False
 
+def game_flop_distribution_check(x):
+    if x.isdigit() and 1 <= int(x) <= 2:
+        return True
+    game_flop_distribution_menu()
+    return False
+
+
+def game_flop_bet_check(x):
+    if x.isdigit() and 1 <= int(x) <= 5:
+        return True
+    game_flop_bet_menu()
+    return False
+
+
+def game_turn_distribution_check(x):
+    if x.isdigit() and 1 <= int(x) <= 2:
+        return True
+    game_turn_distribution_menu()
+    return False
+
+
+def game_turn_bet_check(x):
+    if x.isdigit() and 1 <= int(x) <= 5:
+        return True
+    game_turn_bet_menu()
+    return False
+
+
+def game_river_distribution_check(x):
+    if x.isdigit() and 1 <= int(x) <= 2:
+        return True
+    game_river_distribution_menu()
+    return False
+
+
+def game_river_bet_check(x):
+    if x.isdigit() and 1 <= int(x) <= 5:
+        return True
+    game_river_bet_menu()
+    return False
+
+
+def game_showdown_check(x):
+    if x.isdigit() and 1 <= int(x) <= 5:
+        return True
+    game_showdown_menu()
+    return False
+
 
 def pause_rules_check(x):
     if len(x) >= 0:
@@ -338,27 +422,27 @@ menu_list = {
 
     'learn_settings_menu': Menu('Настройки обучения:', [
         ['Настройки базы данных', db_settings_menu],
-        ['Количество ботов', learning_bots_number_menu],
+        ['Количество ботов', learning_players_number_menu],
         ['Длина серии игр', series_length_menu],
         ['Количество обучающих серий', series_number_menu],
         ['Частота автосохранений', autosaves_frequency_menu],
         ['Начать обучение', start_learning_menu],
         ['Вернуться в Главное меню', main_menu]
     ], TextInput('Выберите номер команды: ', learn_settings_check)),
-    'learning_bots_number_menu': Menu(lambda: f'Настройки обучения: Количество ботов - {game.PLAYERS_NUMBER}', [], TextInput('Введите количество ботов (1-10): ', learning_bots_number_check)),
+    'learning_players_number_menu': Menu(lambda: f'Настройки обучения: Количество ботов - {game.PLAYERS_NUMBER}', [], TextInput('Введите количество ботов (1-10): ', learning_bots_number_check)),
     'series_length_menu': Menu(lambda: f'Настройки обучения: Длина серии игр - {config.SERIES_LENGTH}', [], TextInput('Введите длину серии игр (1-30): ', series_length_check)),
     'series_number_menu': Menu(lambda: f'Настройки обучения: Количество серий игр - {config.SERIES_NUMBER}', [], TextInput('Введите количество обучающих серий (1-10000000): ', series_number_check)),
     'autosaves_frequency_menu': Menu(lambda: f'Настройки обучения: Частота автосохранений - {config.AUTOSAVES_FREQUENCY}', [], TextInput('Введите частоту автосохранений (до 120 минут): ', autosaves_frequency_check)),
 
     'game_settings_menu': Menu('Настройки игры:', [
-        ['Количество ботов', bots_number_menu],
+        ['Количество игроков', players_number_menu],
         ['Имена ботов', bots_names_menu],
         ['Минимальная ставка', min_bet_menu],
         ['Правила игры', rules_menu],
         ['Начать игру', game_initialization_menu],
         ['Вернуться в Главное меню', main_menu]
     ], TextInput('Выберите номер команды: ', game_settings_check)),
-    'bots_number_menu': Menu(lambda: f'Настройки игры: Количество ботов - {game.PLAYERS_NUMBER - 1}', [], TextInput('Введите количество ботов (1-9): ', bots_number_check)),
+    'players_number_menu': Menu(lambda: f'Настройки игры: Количество игроков - {game.PLAYERS_NUMBER}', [], TextInput('Введите количество игроков (2-10): ', bots_number_check)),
     'bots_names_menu': Menu('Настройки игры: Имена ботов', [], TextInput('Введите новые имена ботов через пробел: ', bots_names_check)),
     'min_bet_menu': Menu(lambda: f'Настройки игры: Минимальная ставка - {game.GAME_MIN_BET}', [], TextInput('Введите минимальную ставку (50-1000000): ', min_bet_check)),
     'rules_menu': Menu(lambda: f'Настройки игры: Правила игры - {config.RULES}', [], TextInput('Введите Хоп-хей-ла-лей, чтобы продолжить: ', rules_check)),
@@ -374,11 +458,12 @@ menu_list = {
     'export_db_menu': Menu(lambda: f'Настройки базы данных: Путь до последнего экпортированного файла базы данных - {config.EXPORT_PATH}', [], TextInput('Введите путь сохранения базы данных: ', export_db_check)),
     'erase_db_menu': Menu(lambda: f'Настройки базы данных: Очистка файла базы данных - {config.DB_PATH}', [], TextInput('Файл базы данных будет очищен. Вы уверены? ', erase_db_check)),
 
-    'game_initialization_menu': Menu(lambda: f'Настройка...\nОчередь: {", ".join([game.PLAYERS[x].name for x in game.INITIAL_QUEUE])}\nМинимальная ставка: {game.GAME_MIN_BET}\nВремя обучения ботов: {config.BOTS_LEARNING_SERIES_LENGTH}', [
+    'game_initialization_menu': Menu(lambda: f'Настройка...\nКоличество игроков: {game.PLAYERS_NUMBER}\nМинимальная ставка: {game.GAME_MIN_BET}\nВремя обучения ботов: {config.BOTS_LEARNING_SERIES_LENGTH}', [
         ['Начать игру', game_preflop_distribution_menu],
         ['Вернуться к Настройкам игры', game_settings_menu],
         ['Вернуться в Главное меню', main_menu],
     ], TextInput('Введите номер команды: ', game_initialization_check)),
+
     'game_preflop_distribution_menu': Menu(lambda: f'Префлоп - раздача - банк {game.BANK}\n\n{get_queue_string()}', [
         ['Продолжить', game_preflop_bet_menu],
         ['Пауза', game_pause_menu],
@@ -390,6 +475,47 @@ menu_list = {
         ['Сбросить', game_flop_distribution_menu],
         ['Пауза', game_pause_menu],
     ], TextInput('Введите номер команды: ', game_preflop_bet_check)),
+
+    'game_flop_distribution_menu': Menu(lambda: f'Флоп - раздача - {get_cards_string(poker.get_table_cards())}- банк {game.BANK}\n\n{get_queue_string()}', [
+        ['Продолжить', game_flop_bet_menu],
+        ['Пауза', game_pause_menu],
+    ], TextInput('Введите номер команды: ', game_preflop_distribution_check)),
+    'game_flop_bet_menu': Menu(lambda: f'Флоп - ставки - {get_cards_string(poker.get_table_cards())}- банк {game.BANK}\n\n{get_queue_string()}', [
+        ['Поднять', game_turn_distribution_menu],
+        [lambda: 'Уравнять' if True else 'Пропустить', game_turn_distribution_menu],
+        ['Ва-банк', game_turn_distribution_menu],
+        ['Сбросить', game_turn_distribution_menu],
+        ['Пауза', game_pause_menu],
+    ], TextInput('Введите номер команды: ', game_flop_bet_check)),
+
+    'game_turn_distribution_menu': Menu(lambda: f'Терн - раздача - {get_cards_string(poker.get_table_cards())}- банк {game.BANK}\n\n{get_queue_string()}', [
+        ['Продолжить', game_turn_bet_menu],
+        ['Пауза', game_pause_menu],
+    ], TextInput('Введите номер команды: ', game_turn_distribution_check)),
+    'game_turn_bet_menu': Menu(lambda: f'Терн - ставки - {get_cards_string(poker.get_table_cards())}- банк {game.BANK}\n\n{get_queue_string()}', [
+        ['Поднять', game_river_distribution_menu],
+        [lambda: 'Уравнять' if True else 'Пропустить', game_river_distribution_menu],
+        ['Ва-банк', game_river_distribution_menu],
+        ['Сбросить', game_river_distribution_menu],
+        ['Пауза', game_pause_menu],
+    ], TextInput('Введите номер команды: ', game_turn_bet_check)),
+
+    'game_river_distribution_menu': Menu(lambda: f'Ривер - раздача - {get_cards_string(poker.get_table_cards())}- банк {game.BANK}\n\n{get_queue_string()}', [
+        ['Продолжить', game_river_bet_menu],
+        ['Пауза', game_pause_menu],
+    ], TextInput('Введите номер команды: ', game_river_distribution_check)),
+    'game_river_bet_menu': Menu(lambda: f'Ривер - ставки - {get_cards_string(poker.get_table_cards())}- банк {game.BANK}\n\n{get_queue_string()}', [
+        ['Поднять', game_showdown_menu],
+        [lambda: 'Уравнять' if True else 'Пропустить', game_showdown_menu],
+        ['Ва-банк', game_showdown_menu],
+        ['Сбросить', game_showdown_menu],
+        ['Пауза', game_pause_menu],
+    ], TextInput('Введите номер команды: ', game_river_bet_check)),
+
+    'game_showdown_menu': Menu(lambda: f'Шоудаун - {get_cards_string(poker.get_table_cards())}- банк {game.BANK}\n\n{get_queue_string(False)}', [
+        ['Продолжить', game_initialization_menu],
+        ['Пауза', game_pause_menu],
+    ], TextInput('Введите номер команды: ', game_showdown_check)),
 
     'game_pause_menu': Menu(f'Пауза', [
         ['Продолжить', return_to_game],
