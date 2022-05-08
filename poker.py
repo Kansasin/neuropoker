@@ -7,6 +7,7 @@ class Player:
     def __init__(self, name):
         self.name = name
         self.bank = game.DEFAULT_BANK
+        self.is_fold = False
 
     def get_index(self): #  использовать только после настройки игры
         return game.PLAYERS.index(self)

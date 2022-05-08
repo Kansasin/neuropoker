@@ -9,22 +9,26 @@ border = '\n--------------------------------------------------\n'
 class Menu:
     def __init__(self, label, options, text_input):
         self.label = label  # может быть как просто строкой, так и функцией, чтобы отображать в меню меняющиеся данные
-        self.options = [Option(*x) for x in options]
+        self.options = options
         self.text_input = text_input
 
     def get_label(self):
         if type(self.label) == type(lambda: 0): return self.label()
         elif type(self.label) == type(''): return self.label
 
+    def get_options(self):
+        if type(self.options) == type(lambda: 0): return [Option(*x) for x in self.options()]
+        elif type(self.options) == type([]): return [Option(*x) for x in self.options]
+
     def print_menu(self, cls=True):
         if cls: os.system('cls')
         print(self.get_label() + '\n')
-        if len(self.options) == 0: return self.text_input.print_input()
+        if len(self.get_options()) == 0: return self.text_input.print_input()
         options_str = ''
-        for i in range(len(self.options)):
-            options_str += f'{i + 1}. {self.options[i].get_text()}\n'
+        for i in range(len(self.get_options())):
+            options_str += f'{i + 1}. {self.get_options()[i].get_text()}\n'
         print('\n' + options_str + '\n')
-        self.options[int(self.text_input.print_input()) - 1].callback()
+        self.get_options()[int(self.text_input.print_input()) - 1].callback()
 
 
 class Option:
@@ -35,6 +39,7 @@ class Option:
     def get_text(self):
         if type(self.text) == type(lambda: 0): return self.text()
         elif type(self.text) == type(''): return self.text
+
 
 class TextInput:
     def __init__(self, input_text, check):
@@ -54,11 +59,42 @@ class TextInput:
         return answer
 
 
+def get_round_menu(round_number):
+    return [game_preflop_distribution_menu, game_preflop_bet_menu,
+                   game_flop_distribution_menu, game_flop_bet_menu,
+                   game_turn_distribution_menu, game_turn_bet_menu,
+                   game_river_distribution_menu, game_river_bet_menu,
+                   game_showdown_menu, game_initialization_menu][round_number]
+
+
+def get_user_command_string(command):
+    get_string = lambda: ''
+    if command == 0: get_string = lambda: f'Поднять <{game.CURRENT_MIN_BET} - {game.PLAYERS[-1].bank}>'
+    elif command == 1: get_string = lambda: f'Уравнять ({game.CURRENT_MIN_BET})'
+    elif command == 2: get_string = lambda: 'Пропустить'
+    elif command == 3: get_string = lambda: f'Ва-банк ({game.PLAYERS[-1].bank})'
+    elif command == 4: get_string = lambda: 'Сбросить'
+    return get_string
+
+
+def get_available_commands():
+    player = game.PLAYERS[-1]
+    if player.is_fold: return []  # если уже сбросили, то делать нечего
+    commands = []
+    if player.bank > game.CURRENT_MIN_BET: commands += [0]
+    if player.bank >= game.CURRENT_MIN_BET: commands += [1]
+    if game.CURRENT_MIN_BET == 0: commands += [2]
+    if player.bank > 0: commands += [3]
+    commands += [4]
+    return [[get_user_command_string(x), get_round_menu(game.ROUND + 1)] for x in commands]
+
+
 def get_cards_string(cards, hide=False):
     string = ''
     for card in cards:
         string += f'[{"XX" if hide else card.icon}] '
     return string
+
 
 def get_queue_string(hide=True):
     queue = [game.PLAYERS[x] for x in game.CURRENT_QUEUE]
@@ -66,6 +102,7 @@ def get_queue_string(hide=True):
     for player in queue:
         string += f'{player.name} - {"м. блайнд" if player.get_queue_index() == 0 else ("б. блайнд" if player.get_queue_index() == 1 else "игрок")} - {player.bank} ф. - {get_cards_string(player.get_cards(), player.get_index() != game.PLAYERS_NUMBER - 1 and hide)}\n'
     return string
+
 
 def main_menu():
     menu_list['main_menu'].print_menu()
@@ -356,6 +393,7 @@ def game_preflop_bet_check(x):
     game_preflop_bet_menu()
     return False
 
+
 def game_flop_distribution_check(x):
     if x.isdigit() and 1 <= int(x) <= 2:
         return True
@@ -468,49 +506,33 @@ menu_list = {
         ['Продолжить', game_preflop_bet_menu],
         ['Пауза', game_pause_menu],
     ], TextInput('Введите номер команды: ', game_preflop_distribution_check)),
-    'game_preflop_bet_menu': Menu(lambda: f'Префлоп - ставки - банк {game.BANK}\n\n{get_queue_string()}', [
-        ['Поднять', game_flop_distribution_menu],
-        [lambda: 'Уравнять' if True else 'Пропустить', game_flop_distribution_menu],
-        ['Ва-банк', game_flop_distribution_menu],
-        ['Сбросить', game_flop_distribution_menu],
-        ['Пауза', game_pause_menu],
-    ], TextInput('Введите номер команды: ', game_preflop_bet_check)),
+    'game_preflop_bet_menu': Menu(lambda: f'Префлоп - ставки - банк {game.BANK}\n\n{get_queue_string()}',
+        lambda: get_available_commands() + [['Пауза', game_pause_menu]],
+        TextInput('Введите номер команды: ', game_preflop_bet_check)),
 
     'game_flop_distribution_menu': Menu(lambda: f'Флоп - раздача - {get_cards_string(poker.get_table_cards())}- банк {game.BANK}\n\n{get_queue_string()}', [
         ['Продолжить', game_flop_bet_menu],
         ['Пауза', game_pause_menu],
     ], TextInput('Введите номер команды: ', game_preflop_distribution_check)),
-    'game_flop_bet_menu': Menu(lambda: f'Флоп - ставки - {get_cards_string(poker.get_table_cards())}- банк {game.BANK}\n\n{get_queue_string()}', [
-        ['Поднять', game_turn_distribution_menu],
-        [lambda: 'Уравнять' if True else 'Пропустить', game_turn_distribution_menu],
-        ['Ва-банк', game_turn_distribution_menu],
-        ['Сбросить', game_turn_distribution_menu],
-        ['Пауза', game_pause_menu],
-    ], TextInput('Введите номер команды: ', game_flop_bet_check)),
+    'game_flop_bet_menu': Menu(lambda: f'Флоп - ставки - {get_cards_string(poker.get_table_cards())}- банк {game.BANK}\n\n{get_queue_string()}',
+        lambda: get_available_commands() + [['Пауза', game_pause_menu]],
+        TextInput('Введите номер команды: ', game_flop_bet_check)),
 
     'game_turn_distribution_menu': Menu(lambda: f'Терн - раздача - {get_cards_string(poker.get_table_cards())}- банк {game.BANK}\n\n{get_queue_string()}', [
         ['Продолжить', game_turn_bet_menu],
         ['Пауза', game_pause_menu],
     ], TextInput('Введите номер команды: ', game_turn_distribution_check)),
-    'game_turn_bet_menu': Menu(lambda: f'Терн - ставки - {get_cards_string(poker.get_table_cards())}- банк {game.BANK}\n\n{get_queue_string()}', [
-        ['Поднять', game_river_distribution_menu],
-        [lambda: 'Уравнять' if True else 'Пропустить', game_river_distribution_menu],
-        ['Ва-банк', game_river_distribution_menu],
-        ['Сбросить', game_river_distribution_menu],
-        ['Пауза', game_pause_menu],
-    ], TextInput('Введите номер команды: ', game_turn_bet_check)),
+    'game_turn_bet_menu': Menu(lambda: f'Терн - ставки - {get_cards_string(poker.get_table_cards())}- банк {game.BANK}\n\n{get_queue_string()}',
+        lambda: get_available_commands() + [['Пауза', game_pause_menu]],
+        TextInput('Введите номер команды: ', game_turn_bet_check)),
 
     'game_river_distribution_menu': Menu(lambda: f'Ривер - раздача - {get_cards_string(poker.get_table_cards())}- банк {game.BANK}\n\n{get_queue_string()}', [
         ['Продолжить', game_river_bet_menu],
         ['Пауза', game_pause_menu],
     ], TextInput('Введите номер команды: ', game_river_distribution_check)),
-    'game_river_bet_menu': Menu(lambda: f'Ривер - ставки - {get_cards_string(poker.get_table_cards())}- банк {game.BANK}\n\n{get_queue_string()}', [
-        ['Поднять', game_showdown_menu],
-        [lambda: 'Уравнять' if True else 'Пропустить', game_showdown_menu],
-        ['Ва-банк', game_showdown_menu],
-        ['Сбросить', game_showdown_menu],
-        ['Пауза', game_pause_menu],
-    ], TextInput('Введите номер команды: ', game_river_bet_check)),
+    'game_river_bet_menu': Menu(lambda: f'Ривер - ставки - {get_cards_string(poker.get_table_cards())}- банк {game.BANK}\n\n{get_queue_string()}',
+        lambda: get_available_commands() + [['Пауза', game_pause_menu]],
+        TextInput('Введите номер команды: ', game_river_bet_check)),
 
     'game_showdown_menu': Menu(lambda: f'Шоудаун - {get_cards_string(poker.get_table_cards())}- банк {game.BANK}\n\n{get_queue_string(False)}', [
         ['Продолжить', game_initialization_menu],
@@ -529,5 +551,5 @@ menu_list = {
 def start():
     os.system('color 2')
     os.system('title НейроПокер')
-    os.system("mode con cols=75 lines=25")
+    # os.system("mode con cols=75 lines=25")
     main_menu()
