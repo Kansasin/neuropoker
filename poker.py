@@ -75,7 +75,6 @@ class Player:
         # breakpoint()
 
 
-
 class Bot(Player):
     def __init__(self, name):
         super().__init__(name)
@@ -111,7 +110,9 @@ class User(Player):
     def get_command(self):
         pass
 
+
 shuffle_players = lambda players: random.shuffle(players)  # перемешать игроков
+
 
 def start_query(start_from_user=False):  # стартуем опрос игроков от начала или от пользователя, если надо было прерваться на получение его ввода
     if start_from_user: game.PLAYERS[-1].get_next_player().get_command()
@@ -130,10 +131,12 @@ def set_queue(players):  # настроить очередь
 def update_history(index, command):
     game.HISTORY_QUEUE.append((game.ROUND, index, command[0], command[1]))
 
+
 def reset_last_commands(reset_round_bet=True):
     for player in game.PLAYERS:
         player.last_command = -1, 0
         if reset_round_bet: player.round_bet = 0
+
 
 def reset_round():
     game.CURRENT_MIN_BET = game.GAME_MIN_BET
@@ -141,6 +144,7 @@ def reset_round():
     game.IS_QUERY_ENDED = False
 
     reset_last_commands()
+
 
 def get_bank():
     return sum([record[3] for record in game.HISTORY_QUEUE])
@@ -158,9 +162,9 @@ flushes = [Flush('D'), Flush('C'), Flush('P'), Flush('H')]
 
 
 class Rank:
-    def __init__(self, level):  # A, 2, 3, 4, 5, 6, 7, 8, 9, 10, J, Q, K
+    def __init__(self, level):  # 2, 3, 4, 5, 6, 7, 8, 9, 10, J, Q, K, A
         self.level = level
-        self.icon = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'][int(level) - 1]
+        self.icon = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'][int(level) - 1]
         self.is_ace = level == 1
 
 
@@ -235,3 +239,115 @@ def get_available_commands_number(player):  # возвращает список 
     if game.CURRENT_MIN_BET - player.round_bet == 0 or game.LAST_RAISER is None: commands += [2]
     if player.bank > 0: commands += [3]
     return commands + [4]
+
+
+
+
+class Combination:
+    @staticmethod
+    def test():
+        cards = [Card(rank, flush) for rank in ranks for flush in flushes]
+        shuffle_cards(cards)
+        print([card.icon for card in cards[:7]])
+        print(Combination.get_combination_level(cards[:7]))
+        while input("any symbol to end... ") == '':
+            shuffle_cards(cards)
+            print([card.icon for card in cards[:7]])
+            print(Combination.get_combination_level(cards[:7]))
+    @staticmethod
+    def get_combination_level(cards):  # возвращает кортеж из уровня комбинации, уровня старшей карты комбинации (и вторая старшая карта комбинации, если комбинация фулхаус или две пары) и уровня кикера, если он есть (если нет, то кикер = None)
+        methods = [Combination.get_straight_flush, Combination.get_quads, Combination.get_full_house,
+                   Combination.get_flush, Combination.get_straight, Combination.get_set,
+                   Combination.get_two_pairs, Combination.get_pair, Combination.get_high_card]
+        for method in methods:
+            combination_cards = method(cards)
+            if len(combination_cards) == 0: continue
+            high_card = Combination.get_high_card(combination_cards[0] if method in [methods[2], methods[6]] else combination_cards)[0]
+            extra_high_card = Combination.get_high_card(combination_cards[1])[0] if method in [methods[2], methods[6]] else 0
+            kicker = Combination.get_high_card([card for card in cards if card not in (combination_cards if method != methods[6] else combination_cards[0] + combination_cards[1])])[0] if method not in [methods[0], methods[2], methods[3], methods[4]] else 0
+            if method == methods[0] and len(combination_cards) == 5: return 9, high_card.rank.level, 0, 0
+            if method == methods[1] and len(combination_cards) == 4: return 8, high_card.rank.level, 0, kicker.rank.level
+            if method == methods[2] and len(combination_cards[0] + combination_cards[1]) == 5: return 7, high_card.rank.level, extra_high_card.rank.level, 0
+            if method == methods[3] and len(combination_cards) == 5: return 6, high_card.rank.level, 0, 0
+            if method == methods[4] and len(combination_cards) == 5: return 5, high_card.rank.level, 0, 0
+            if method == methods[5] and len(combination_cards) == 3: return 4, high_card.rank.level, extra_high_card.rank.level, kicker.rank.level
+            if method == methods[6] and len(combination_cards[0] + combination_cards[1]) == 4: return 3, high_card.rank.level, extra_high_card.rank.level, kicker.rank.level
+            if method == methods[7] and len(combination_cards) == 2: return 2, high_card.rank.level, 0, kicker.rank.level
+            if method == methods[8]: return 1, high_card.rank.level, 0, kicker.rank.level
+        return 0, 0, 0, 0
+    @staticmethod
+    def sort_cards(cards, reverse=False):
+        cards.sort(key=lambda _: _.flush.name, reverse=reverse)
+        cards.sort(key=lambda _: _.rank.level, reverse=reverse)
+        return cards
+    @staticmethod
+    def get_high_card(cards):
+        Combination.sort_cards(cards, reverse=True)
+        return [cards[0]]
+    @staticmethod
+    def get_duplicates(cards):
+        Combination.sort_cards(cards)  # отсортированы по возрастанию (2,3...Q,K,A)
+        duplicates = dict()
+        for card in cards:
+            if card.rank.level in duplicates: duplicates[card.rank.level].append(card)
+            else: duplicates[card.rank.level] = [card]
+        return duplicates
+    @staticmethod
+    def get_straight(cards, return_duplicates=False):
+        if len(cards) < 5: return []
+        duplicates = list(Combination.get_duplicates(cards).values())
+        duplicates.reverse()
+        straight = [duplicates[0]]
+        for i in range(len(duplicates) - 1):
+            duplicate1 = duplicates[i]
+            duplicate2 = duplicates[i + 1]
+            if duplicate1[0].rank.level == duplicate2[0].rank.level + 1: straight.append(duplicate2)
+            else: straight = [duplicate2]
+            if len(straight) >= 5: break
+        if len(straight) < 5: return []
+        return straight[-5:] if return_duplicates else [duplicate[0] for duplicate in straight[-5:]]
+    @staticmethod
+    def get_flush(cards):
+        if len(cards) < 5: return []
+        Combination.sort_cards(cards)
+        cards_by_flushes = dict()
+        for flush_name in flushes:
+            card_list = [card for card in cards if card.flush.name == flush_name]
+            if len(card_list) >= 5: cards_by_flushes[flush_name] = card_list
+        if len(cards_by_flushes) == 0: return []
+        elif len(cards_by_flushes) == 1: return cards_by_flushes[list(cards_by_flushes.keys())[0]]
+        else:
+            highest_cards_by_flushes = {flush_name: Combination.get_high_card(card_list)[0] for flush_name, card_list in cards_by_flushes}
+            highest_card = None
+            highest_flush = None
+            for flush_name, card in highest_cards_by_flushes:
+                if highest_card is None or highest_card.rank.level < card.rank.level:
+                    highest_card = card
+                    highest_flush = flush_name
+            return cards_by_flushes[highest_flush][-5:]
+    @staticmethod
+    def get_straight_flush(cards):
+        return Combination.get_flush(Combination.get_straight(cards))
+    @staticmethod
+    def get_pair(cards):
+        result = [card_list for card_list in Combination.get_duplicates(cards).values() if len(card_list) == 2]
+        return result[-1] if len(result) > 0 else []
+    @staticmethod
+    def get_two_pairs(cards):
+        result = [card_list for card_list in Combination.get_duplicates(cards).values() if len(card_list) == 2]
+        return result[1::-1] if len(result) >= 2 else []
+    @staticmethod
+    def get_set(cards):
+        result = [card_list for card_list in Combination.get_duplicates(cards).values() if len(card_list) == 3]
+        return result[-1] if len(result) > 0 else []
+    @staticmethod
+    def get_quads(cards):
+        result = [card_list for card_list in Combination.get_duplicates(cards).values() if len(card_list) == 4]
+        return result[-1] if len(result) > 0 else []
+    @staticmethod
+    def get_full_house(cards):  # старшинство определяется сначала по сету, потом по паре
+        result = Combination.get_set(cards), Combination.get_pair(cards)
+        return result if len(result[0] + result[1]) == 5 else []
+
+if __name__ == '__main__':
+    Combination.test()
