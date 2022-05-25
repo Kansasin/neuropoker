@@ -6,17 +6,6 @@ from menu import *
 border = '\n--------------------------------------------------\n'
 
 
-def get_next_round_number():
-    return (game.ROUND + 1) % 9
-
-
-def change_round(round_number=None):
-    if not (round_number is None): game.ROUND = round_number
-    else: game.ROUND = get_next_round_number() if poker.is_bets_equal() else game.ROUND
-    if poker.players_alive() <= 1: game.ROUND = 8
-    return game.ROUND
-
-
 def get_round_menu(round_number):
     return [game_preflop_distribution_menu, game_preflop_bet_menu,
                    game_flop_distribution_menu, game_flop_bet_menu,
@@ -46,52 +35,44 @@ def get_command_string(command):  # возвращает строку комма
 
 
 def raise_command(args):
-    game.PLAYERS[-1].exec_command(0, args[1])
-    poker.start_query(True)
+    game.PLAYERS[-1].do_command((0, int(args[1])), True)
     return get_round_menu(game.ROUND)()
 
 def blind_command():
-    if game.PLAYERS[-1].is_sb: game.PLAYERS[-1].exec_command(0, game.GAME_MIN_BET)
-    if game.PLAYERS[-1].is_bb: game.PLAYERS[-1].exec_command(0, game.GAME_MIN_BET * 2)
-    poker.start_query(True)
+    if game.PLAYERS[-1].is_sb: game.PLAYERS[-1].do_command((0, game.GAME_MIN_BET), True)
+    if game.PLAYERS[-1].is_bb: game.PLAYERS[-1].do_command((0, game.GAME_MIN_BET * 2), True)
     return get_round_menu(game.ROUND)()
 
 def call_command():
-    game.PLAYERS[-1].exec_command(1, 0)
-    poker.start_query(True)
+    game.PLAYERS[-1].do_command((1, 0), True)
     return get_round_menu(game.ROUND)()
 
 def check_command():
-    game.PLAYERS[-1].exec_command(2, 0)
-    poker.start_query(True)
+    game.PLAYERS[-1].do_command((2, 0), True)
     return get_round_menu(game.ROUND)()
 
 def allin_command():
-    game.PLAYERS[-1].exec_command(3, 0)
-    poker.start_query(True)
+    game.PLAYERS[-1].do_command((3, 0), True)
     return get_round_menu(game.ROUND)()
 
 def fold_command():
-    game.PLAYERS[-1].exec_command(4, 0)
-    poker.start_query(True)
+    game.PLAYERS[-1].do_command((4, 0), True)
     return get_round_menu(game.ROUND)()
 
 def continue_command():
-    if poker.is_bets_equal():
-        change_round()
-        poker.reset_round()
+    poker.change_round()
     return get_round_menu(game.ROUND)()
 
 
 def get_available_commands_options():  # возвращает список доступных команд в виде опций для пользователя
-    user_commands = [raise_command, call_command, check_command, allin_command, fold_command]
+    user_commands = raise_command, call_command, check_command, allin_command, fold_command
 
     if game.IS_QUERY_ENDED or game.ROUND % 2 == 0:
-        return [['Продолжить', continue_command], ['Пауза', game_pause_menu]]
+        return ('Продолжить', continue_command), ('Пауза', game_pause_menu)
     elif game.ROUND % 2 == 1:
         if game.ROUND == 1 and game.PLAYERS[-1].round_bet == 0 and (game.PLAYERS[-1].is_sb or game.PLAYERS[-1].is_bb):
-            if game.PLAYERS[-1].is_sb: return [[f'Поднять {game.GAME_MIN_BET}', blind_command], ['Пауза', game_pause_menu]]
-            if game.PLAYERS[-1].is_bb: return [[f'Поднять {game.GAME_MIN_BET * 2}', blind_command], ['Пауза', game_pause_menu]]
+            if game.PLAYERS[-1].is_sb: return (f'Поднять {game.GAME_MIN_BET}', blind_command), ('Пауза', game_pause_menu)
+            if game.PLAYERS[-1].is_bb: return (f'Поднять {game.GAME_MIN_BET * 2}', blind_command), ('Пауза', game_pause_menu)
         return [[get_user_command_string(command, game.PLAYERS[-1]), user_commands[command]] for command in poker.get_available_commands_number(game.PLAYERS[-1])] + [['Пауза', game_pause_menu]]
 
 
@@ -102,25 +83,44 @@ def get_cards_string(cards, hide=False):
     return string
 
 
+def get_combination_string(player):
+    high_card = player.combination[1][0]
+    kicker_card = player.combination[2][0] if len(player.combination[2]) > 0 else None
+    if player.combination[0] == 9: return f'Стрит-флеш {high_card.icon}'
+    if player.combination[0] == 8: return f'Каре {high_card.icon}, кикер {kicker_card.icon}'
+    if player.combination[0] == 7: return f'Фул-хаус, {high_card.icon}'
+    if player.combination[0] == 6: return f'Флеш {high_card.icon}'
+    if player.combination[0] == 5: return f'Стрит {high_card.icon}'
+    if player.combination[0] == 4: return f'Сет {high_card.icon}, кикер {kicker_card.icon}'
+    if player.combination[0] == 3: return f'Две пары {high_card.icon}, кикер {kicker_card.icon}'
+    if player.combination[0] == 2: return f'Пара {high_card.icon}, кикер {kicker_card.icon}'
+    if player.combination[0] == 1: return f'Старшая карта {player.combination[1][0].icon}'
+
+
 def get_queue_string():
     queue = [game.PLAYERS[x] for x in game.INITIAL_QUEUE]
     string = ''
     for player in queue:
         cards = get_cards_string(player.get_cards(), (game.ROUND != 8) and (player.get_index() != game.PLAYERS_NUMBER - 1))
-        string += f'{player.name} - {player.get_role()} - {player.bank} ф. - {cards}\n'
+        string += f'{player.name} - {player.get_role()} - {player.bank} ф. - {cards}'
+        if player.is_fold: string += ': Сбросил'
+        else:
+            if poker.get_player_allin_record(player): string += ': Ва-банк '
+            if game.ROUND == 8: string += f': {get_combination_string(player)}' if player.bank > 0 else get_combination_string(player)
+        string += '\n'
     return string
 
 
 def get_queue_commands_string():  # тоже, что и get_queue_string(), только каждая строка содержит команды, которые сделали игроки
     poker.start_query(False)
-    queue = [(game.PLAYERS[record[1]], (record[2], record[3])) for record in game.HISTORY_QUEUE if record[0] == game.ROUND]
+    queue = [(game.PLAYERS[record[1]], (record[2], record[3])) for record in game.HISTORY_QUEUE if record[0] == (game.ROUND if game.ROUND % 2 == 1 else game.ROUND - 1)]
     string = ''
     for player, command in queue:
         cards = get_cards_string(player.get_cards(), (game.ROUND == 8) or (player.get_index() != game.PLAYERS_NUMBER - 1))
         string += f'{player.name} - {player.get_role()} - {player.bank} ф. - {cards}: {get_command_string(command)}\n'
 
-    cards = get_cards_string(game.PLAYERS[-1].get_cards(), game.ROUND == 8)
-    return string + f'{game.PLAYERS[-1].name} - {game.PLAYERS[-1].get_role()} - {game.PLAYERS[-1].bank} ф. - {cards}:\n'
+    if not game.IS_QUERY_ENDED: string += f'{game.PLAYERS[-1].name} - {game.PLAYERS[-1].get_role()} - {game.PLAYERS[-1].bank} ф. - {get_cards_string(game.PLAYERS[-1].get_cards())}:\n'
+    return string
 
 
 def main_menu():
@@ -369,6 +369,8 @@ def learn_settings_check(x):
 
 def game_settings_check(x):
     if x.isdigit() and 1 <= int(x) <= 6:
+        game.GAME_WITH_USER = False
+        game.GAME_WAS_INITIALIZED = False
         return True
     game_settings_menu()
     return False
@@ -383,7 +385,9 @@ def db_settings_check(x):
 
 def game_initialization_check(x):
     if x.isdigit() and 1 <= int(x) <= 3:
-        poker.set_game()
+        game.GAME_WITH_USER = True
+        poker.set_game(reset_players=not game.GAME_WAS_INITIALIZED)
+        game.GAME_WAS_INITIALIZED = True
         return True
     game_initialization_menu()
     return False
@@ -490,7 +494,7 @@ menu_list = {
         ['Имена ботов', bots_names_menu],
         ['Минимальная ставка', min_bet_menu],
         ['Правила игры', rules_menu],
-        ['Начать игру', game_initialization_menu],
+        ['Создать игру', game_initialization_menu],
         ['Вернуться в Главное меню', main_menu]
     ], TextInput('Выберите номер команды: ', game_settings_check)),
     'players_number_menu': Menu(lambda: f'Настройки игры: Количество игроков - {game.PLAYERS_NUMBER}', [], TextInput('Введите количество игроков (2-10): ', bots_number_check)),
@@ -509,7 +513,7 @@ menu_list = {
     'export_db_menu': Menu(lambda: f'Настройки базы данных: Путь до последнего экпортированного файла базы данных - {config.EXPORT_PATH}', [], TextInput('Введите путь сохранения базы данных: ', export_db_check)),
     'erase_db_menu': Menu(lambda: f'Настройки базы данных: Очистка файла базы данных - {config.DB_PATH}', [], TextInput('Файл базы данных будет очищен. Вы уверены? ', erase_db_check)),
 
-    'game_initialization_menu': Menu(lambda: f'Настройка...\nКоличество игроков: {game.PLAYERS_NUMBER}\nМинимальная ставка: {game.GAME_MIN_BET}\nВремя обучения ботов: {config.BOTS_LEARNING_SERIES_LENGTH}', [
+    'game_initialization_menu': Menu(lambda: f'Инициализация игры\nКоличество игроков: {game.PLAYERS_NUMBER}\nМинимальная ставка: {game.GAME_MIN_BET}\nВремя обучения ботов: {config.BOTS_LEARNING_SERIES_LENGTH}', [
         ['Начать игру', get_round_menu(0)],
         ['Вернуться к Настройкам игры', game_settings_menu],
         ['Вернуться в Главное меню', main_menu],
