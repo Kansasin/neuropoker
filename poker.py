@@ -110,7 +110,10 @@ class Bot(Player):
             min_bet = (game.CURRENT_MIN_BET + 1 if game.CURRENT_MIN_BET > game.GAME_MIN_BET else game.GAME_MIN_BET) - self.round_bet
             bet = random.randint(min_bet, self.bank - 1) if command == 0 else 0
         else:
-            command = available_commands[0] if available_commands[0] != 0 else available_commands[1]
+            command = 4
+            if 2 in available_commands: command = 2
+            elif 1 in available_commands: command = 1
+            elif 3 in available_commands: command = 3
             bet = game.GAME_MIN_BET if command == 0 else 0
         if game.ROUND <= 1 and self.round_bet == 0:  # если сейчас ставки на префлопе, и игрок не делал ставок, то
             if self.is_sb:  # если игрок - м.блайнд, то обязательно ставим минимальную ставку
@@ -271,6 +274,10 @@ def do_all_command():  # все ли выбрали команду
     return all([player.last_command[0] != -1 for player in game.PLAYERS if not player.is_fold and player.bank > 0])
 
 
+def do_any_command():  # кто-нибудь выбрал команду
+    return any([player.last_command[0] != -1 for player in game.PLAYERS if not player.is_fold and player.bank > 0])
+
+
 def players_alive():  # сколько игроков все еще играет (кто не фолданул и с фишками)
     return len([player for player in game.PLAYERS if not player.is_fold and player.bank > 0])
 
@@ -296,7 +303,7 @@ def get_available_commands_number(player):  # возвращает список 
     if player.bank == 0: return [2]  # если у пользователя нет фишек, то может только сбросить и пропустить
     commands = []
     if player.bank > game.CURRENT_MIN_BET - player.round_bet + 1 > 0: commands += [0]
-    if player.bank > game.CURRENT_MIN_BET - player.round_bet > 0 and game.CURRENT_MIN_BET != game.GAME_MIN_BET: commands += [1]
+    if player.bank > game.CURRENT_MIN_BET - player.round_bet > 0: commands += [1]
     if is_bets_equal(): commands += [2]
     if player.bank > 0: commands += [3]
     return commands + [4]

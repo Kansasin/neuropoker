@@ -16,8 +16,10 @@ def get_round_menu(round_number):
 
 def get_user_command_string(command, player):  # возвращает строку для опции по номеру команды и по игроку
     get_string = lambda: ''
-    if command == 0: get_string = lambda: f'Поднять <{game.CURRENT_MIN_BET - player.round_bet + 1 if game.GAME_MIN_BET < game.CURRENT_MIN_BET else game.GAME_MIN_BET} - {player.bank - 1}>'
-    elif command == 1: get_string = lambda: f'Уравнять ({game.CURRENT_MIN_BET - player.round_bet})'
+    if command == 0: get_string = lambda: f'Поднять <{game.CURRENT_MIN_BET - player.round_bet + 1} - {player.bank - 1}>'
+    elif command == 1:
+        if game.LAST_RAISER is None: get_string = lambda: f'Поднять {game.GAME_MIN_BET}'
+        else: get_string = lambda: f'Уравнять ({game.CURRENT_MIN_BET - player.round_bet})'
     elif command == 2: get_string = lambda: 'Пропустить'
     elif command == 3: get_string = lambda: f'Ва-банк ({player.bank})'
     elif command == 4: get_string = lambda: 'Сбросить'
@@ -30,18 +32,21 @@ def get_winners_string():
     return ('\nПобедители: ' if len(winners) > 1 else '\nПобедитель: ') + '; '.join(winners_strings)
 
 
-def get_command_string(command):  # возвращает строку комманды
+def get_command_string(command, player):  # возвращает строку комманды
     string = ''
     if command[0] == 0: string = f'Поднял {command[1]}'
-    elif command[0] == 1: string = f'Уравнял ({command[1]})'
+    elif command[0] == 1:
+        if player.get_index() == game.LAST_RAISER: string = f'Поднял {game.GAME_MIN_BET}'
+        else: string = f'Уравнял ({command[1]})'
     elif command[0] == 2: string = 'Пропустил'
     elif command[0] == 3: string = f'Ва-банк ({command[1]})'
     elif command[0] == 4: string = 'Сбросил'
     return string
 
 
-def raise_command(args):
-    game.PLAYERS[-1].do_command((0, int(args[1])), True)
+def raise_command(*args):
+    bet = int(args[1]) if args else (game.CURRENT_MIN_BET + 1 if game.CURRENT_MIN_BET > game.GAME_MIN_BET else game.GAME_MIN_BET)
+    game.PLAYERS[-1].do_command((0, bet), True)
     return get_round_menu(game.ROUND)()
 
 def blind_command():
@@ -124,7 +129,7 @@ def get_queue_commands_string():  # тоже, что и get_queue_string(), то
     string = ''
     for player, command, bank in queue:
         cards = get_cards_string(player.get_cards(), (game.ROUND == 8) or (player.get_index() != game.PLAYERS_NUMBER - 1))
-        string += f'{player.name}\t{player.get_role()}\t{bank} ф.\t{cards}:\t{get_command_string(command)}\n'
+        string += f'{player.name}\t{player.get_role()}\t{bank} ф.\t{cards}:\t{get_command_string(command, player)}\n'
     if not game.IS_QUERY_ENDED: string += f'{game.PLAYERS[-1].name}\t{game.PLAYERS[-1].get_role()}\t{game.PLAYERS[-1].bank} ф.\t{get_cards_string(game.PLAYERS[-1].get_cards())}:\n'
     return string
 
