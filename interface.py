@@ -311,14 +311,11 @@ def bots_number_check(x):
 
 
 def bots_names_check(x):
-    if not x.isdigit() or x == '':
+    if x == '':
         game_settings_menu()
         return True
-    elif False in [len(name) < 15 for name in x.split()]:
-        config.BOTS_NAMES = x
-        game_settings_menu()
-        return True
-    print(x)
+    config.USER_BOTS_NAMES = ' '.join([name for name in x.split() if 2 <= len(name) <= 16])
+    game_settings_menu()
     return False
 
 

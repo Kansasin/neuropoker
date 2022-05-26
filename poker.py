@@ -253,8 +253,11 @@ def set_game(reset_players=True):
     players = game.PLAYERS
     if reset_players:
         names = config.BOTS_NAMES.split(' ')  # берем все доступные имена
-        if config.USER_BOTS_NAMES != '': names += config.USER_BOTS_NAMES.split(' ')  # если есть пользовательские имена, то добавляем их в список
         random.shuffle(names)  # перемешиваем имена
+        if config.USER_BOTS_NAMES != '':  # если пользователь задал имена, то они используются в первую очередь
+            user_names = config.USER_BOTS_NAMES.split()
+            random.shuffle(user_names)
+            names = user_names + names
         players = [Bot(f'BOT_{names[i]}') for i in range(game.PLAYERS_NUMBER - 1)]  # создаем список игроков из ботов
         shuffle_players(players)  # перемешиваем игроков
         players += [User('USR_User')]  # добавляем в список игроков пользователя, если игра с пользователем
