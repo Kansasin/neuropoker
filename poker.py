@@ -27,7 +27,7 @@ class Player:
 
     def get_next_player(self):
         next_player = game.PLAYERS[game.INITIAL_QUEUE[(self.get_queue_index() + 1) % game.PLAYERS_NUMBER]]
-        if do_all_command() and (is_bets_equal() or players_alive() <= 1):
+        if do_all_command() and is_bets_equal():
             # print(*[(player.name, player.is_fold, player.get_queue_index(), player.round_bet, player.last_command[0]) for player in game.PLAYERS], sep="\n")
             game.IS_QUERY_ENDED = True
             # next_player = game.PLAYERS[-1]
@@ -178,9 +178,8 @@ def change_round(round_number=None):
     if not (round_number is None): game.ROUND = round_number
     else:
         game.ROUND = (game.ROUND + 1) % 9 if is_bets_equal() else game.ROUND
-        if players_alive() <= 1: game.ROUND = 8
-        if game.ROUND == 8:
-            split_bank()
+        if players_alive() <= 1 and game.IS_QUERY_ENDED: game.ROUND = 8
+        if game.ROUND == 8: split_bank()
         reset_round()
 
 
