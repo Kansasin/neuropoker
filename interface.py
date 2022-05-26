@@ -24,6 +24,12 @@ def get_user_command_string(command, player):  # возвращает строк
     return get_string
 
 
+def get_winners_string():
+    winners = poker.Combination.get_winners([player for player in game.PLAYERS if not player.is_fold])
+    winners_strings = [f'{winner.name} (+{poker.get_bank() // len(winners)}) - {get_combination_string(winner)}' for winner in winners]
+    return ('\nПобедители: ' if len(winners) > 1 else '\nПобедитель: ') + '; '.join(winners_strings)
+
+
 def get_command_string(command):  # возвращает строку комманды
     string = ''
     if command[0] == 0: string = f'Поднял {command[1]}'
@@ -84,15 +90,16 @@ def get_cards_string(cards, hide=False):
 
 
 def get_combination_string(player):
-    high_card = player.combination[1][0]
-    kicker_card = player.combination[2][0] if len(player.combination[2]) > 0 else None
+    high_card = poker.Combination.sort_cards(player.combination[1], reverse=True)[0]
+    second_card = poker.Combination.sort_cards(player.combination[1], reverse=True)[2] if player.combination[0] == 3 else None
+    kicker_card = poker.Combination.sort_cards(player.combination[2], reverse=True)[0] if len(player.combination[2]) > 0 else None
     if player.combination[0] == 9: return f'Стрит-флеш {high_card.icon}'
     if player.combination[0] == 8: return f'Каре {high_card.icon}, кикер {kicker_card.icon}'
     if player.combination[0] == 7: return f'Фул-хаус, {high_card.icon}'
     if player.combination[0] == 6: return f'Флеш {high_card.icon}'
     if player.combination[0] == 5: return f'Стрит {high_card.icon}'
     if player.combination[0] == 4: return f'Сет {high_card.icon}, кикер {kicker_card.icon}'
-    if player.combination[0] == 3: return f'Две пары {high_card.icon}, кикер {kicker_card.icon}'
+    if player.combination[0] == 3: return f'Две пары {high_card.icon} и {second_card.icon}, кикер {kicker_card.icon}'
     if player.combination[0] == 2: return f'Пара {high_card.icon}, кикер {kicker_card.icon}'
     if player.combination[0] == 1: return f'Старшая карта {player.combination[1][0].icon}'
 
@@ -102,24 +109,23 @@ def get_queue_string():
     string = ''
     for player in queue:
         cards = get_cards_string(player.get_cards(), (game.ROUND != 8) and (player.get_index() != game.PLAYERS_NUMBER - 1))
-        string += f'{player.name} - {player.get_role()} - {player.bank} ф. - {cards}'
-        if player.is_fold: string += ': Сбросил'
+        string += f'{player.name}\t{player.get_role()}\t{player.bank} ф.\t{cards}'
+        if player.is_fold: string += '\tСбросил'
         else:
-            if poker.get_player_allin_record(player): string += ': Ва-банк '
-            if game.ROUND == 8: string += f': {get_combination_string(player)}' if player.bank > 0 else get_combination_string(player)
+            if game.ROUND == 8: string += f'\t{get_combination_string(player) if player.bank > 0 else get_combination_string(player)}'
+            elif poker.get_player_allin_record(player): string += '\tВа-банк'
         string += '\n'
-    return string
+    return string + (get_winners_string() if game.ROUND == 8 else '')
 
 
 def get_queue_commands_string():  # тоже, что и get_queue_string(), только каждая строка содержит команды, которые сделали игроки
     poker.start_query(False)
-    queue = [(game.PLAYERS[record[1]], (record[2], record[3])) for record in game.HISTORY_QUEUE if record[0] == (game.ROUND if game.ROUND % 2 == 1 else game.ROUND - 1)]
+    queue = [(game.PLAYERS[record[1]], (record[2], record[3]), record[5]) for record in game.HISTORY_QUEUE if record[0] == (game.ROUND if game.ROUND % 2 == 1 else game.ROUND - 1) and record[4] == game.ROUND_STEP]
     string = ''
-    for player, command in queue:
+    for player, command, bank in queue:
         cards = get_cards_string(player.get_cards(), (game.ROUND == 8) or (player.get_index() != game.PLAYERS_NUMBER - 1))
-        string += f'{player.name} - {player.get_role()} - {player.bank} ф. - {cards}: {get_command_string(command)}\n'
-
-    if not game.IS_QUERY_ENDED: string += f'{game.PLAYERS[-1].name} - {game.PLAYERS[-1].get_role()} - {game.PLAYERS[-1].bank} ф. - {get_cards_string(game.PLAYERS[-1].get_cards())}:\n'
+        string += f'{player.name}\t{player.get_role()}\t{bank} ф.\t{cards}:\t{get_command_string(command)}\n'
+    if not game.IS_QUERY_ENDED: string += f'{game.PLAYERS[-1].name}\t{game.PLAYERS[-1].get_role()}\t{game.PLAYERS[-1].bank} ф.\t{get_cards_string(game.PLAYERS[-1].get_cards())}:\n'
     return string
 
 

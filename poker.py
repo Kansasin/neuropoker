@@ -17,7 +17,7 @@ class Player:
     def get_role(self):
         if self.is_sb: return "м. блайнд"
         if self.is_bb: return "б. блайнд"
-        return "игрок"
+        return "игрок\t"
 
     def get_index(self): #  использовать только после настройки игры
         return game.PLAYERS.index(self)
@@ -38,6 +38,12 @@ class Player:
     def get_cards(self):
         return [game.CARDS[self.get_index() * 2], game.CARDS[self.get_index() * 2 + 1]]
 
+    def get_bank(self):
+        for record in game.HISTORY_QUEUE:
+            if record[0] != game.ROUND: continue
+            return record[4]
+        return self.bank
+
     def transfer_chips(self, amount, is_bank_to_player=False):
         if is_bank_to_player:  # если банк отправляет фишки игроку (например, в случае победы или ввода чит-кода пользователем), то перечисляем с банка на счет игрока
             self.bank += amount
@@ -53,6 +59,7 @@ class Player:
         if command == 0:  # поднять
             game.LAST_RAISER = self.get_index()
             game.CURRENT_MIN_BET = self.round_bet + bet
+            game.ROUND_STEP += 1
         elif command == 1:  # уравнять
             bet = game.CURRENT_MIN_BET - self.round_bet
         elif command == 2:  # пропустить
@@ -62,6 +69,7 @@ class Player:
             if self.bank > game.CURRENT_MIN_BET - self.round_bet:  # если по всем признакам ва-банк == рейз
                 game.LAST_RAISER = self.get_index()
                 game.CURRENT_MIN_BET = self.round_bet + bet
+                game.ROUND_STEP += 1
         elif command == 4:  # сбросить
             bet = 0
             self.is_fold = True
@@ -73,7 +81,7 @@ class Player:
 
         # get_command_string = lambda num: 'поднял' if num == 0 else ('уравнял' if num == 1 else ('пропустил' if num == 2 else ('ва-банк' if num == 3 else ('сбросил' if num == 4 else ''))))
         # print(f'{self.name} {get_command_string(self.last_command[0])} {self.last_command[1]} ф.')
-        # print(*[(record[0], game.PLAYERS[record[1]].name, get_command_string(record[2]), f'{record[3]} ф.') for record in game.HISTORY_QUEUE], sep="\n")
+        # print(*[(record[0], game.PLAYERS[record[1]].name, get_command_string(record[2]), f'{record[3]} ф.', f'на шаге {record[4]} осталось {record[5]} ф.') for record in game.HISTORY_QUEUE], sep="\n")
         # if not game.LAST_RAISER is None: print(f'Последний поднял {game.PLAYERS[game.LAST_RAISER].name} - {game.PLAYERS[game.LAST_RAISER].round_bet} ф.')
         # else: print(f'Никто не поднял еще, минимальная ставка {game.CURRENT_MIN_BET} ф.')
         # breakpoint()
@@ -154,7 +162,7 @@ def set_queue(players, reset_players=False):  # настроить очеред�
 
 
 def update_history(index, command):
-    game.HISTORY_QUEUE.append((game.ROUND, index, command[0], command[1]))
+    game.HISTORY_QUEUE.append((game.ROUND, index, command[0], command[1], game.ROUND_STEP, game.PLAYERS[index].bank))
 
 
 def reset_last_commands(reset_round_bet=True):
@@ -177,6 +185,7 @@ def reset_round():
     game.CURRENT_MIN_BET = game.GAME_MIN_BET
     game.LAST_RAISER = None
     game.IS_QUERY_ENDED = False
+    game.ROUND_STEP = 0
 
     reset_last_commands()
 
@@ -376,8 +385,6 @@ class Combination:
                     elif kicker_card_comparison[0] == 0: winners = [player]
                 elif high_card_comparison[0] == 0: winners = [player]
             elif player.combination[0] > winners[0].combination[0]: winners = [player]
-        print([player.name for player in winners])
-        breakpoint()
         return winners
     @staticmethod
     def get_combination_level(cards):  # возвращает кортеж из уровня комбинации, уровня старшей карты комбинации (и вторая старшая карта комбинации, если комбинация фулхаус или две пары) и уровня кикера, если он есть (если нет, то кикер = None)
