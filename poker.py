@@ -1,12 +1,14 @@
 import random
-import config
+import train_settings
 import game_settings as game
+import json
+import os
 
 
 class Player:
     def __init__(self, name):
         self.name = name
-        self.bank = game.DEFAULT_BANK
+        self.bank = game.SAVABLE["MIN_BANK"]
         self.is_fold = False
         self.last_command = tuple([-1, 0])  # команда -1 означает, что команда отсутствует
         self.round_bet = 0  # ставка, которую игрок поставил в течение раунда
@@ -26,7 +28,7 @@ class Player:
         return game.INITIAL_QUEUE.index(self.get_index(), start)
 
     def get_next_player(self):
-        next_player = game.PLAYERS[game.INITIAL_QUEUE[(self.get_queue_index() + 1) % game.PLAYERS_NUMBER]]
+        next_player = game.PLAYERS[game.INITIAL_QUEUE[(self.get_queue_index() + 1) % game.SAVABLE["PLAYERS_NUMBER"]]]
         if do_all_command() and is_bets_equal():
             # print(*[(player.name, player.is_fold, player.get_queue_index(), player.round_bet, player.last_command[0]) for player in game.PLAYERS], sep="\n")
             game.IS_QUERY_ENDED = True
@@ -108,23 +110,23 @@ class Bot(Player):
         # breakpoint()
         command = -1
         bet = 0
-        if config.BOTS_MODE == 'random':
+        if game.SAVABLE["BOTS_MODE"] == 'random':
             command = available_commands[random.randint(0, len(available_commands) - 1)]
-            min_bet = (game.CURRENT_MIN_BET + 1 if game.CURRENT_MIN_BET > game.GAME_MIN_BET else game.GAME_MIN_BET) - self.round_bet
+            min_bet = (game.CURRENT_MIN_BET + 1 if game.CURRENT_MIN_BET > game.SAVABLE["GAME_MIN_BET"] else game.SAVABLE["GAME_MIN_BET"]) - self.round_bet
             bet = random.randint(min_bet, self.bank - 1) if command == 0 else 0
-        elif config.BOTS_MODE in ['passive', 'trained']:
+        elif game.SAVABLE["BOTS_MODE"] in ['passive', 'trained']:
             command = 4
             if 2 in available_commands: command = 2
             elif 1 in available_commands: command = 1
             elif 3 in available_commands: command = 3
-            bet = game.GAME_MIN_BET if command == 0 else 0
+            bet = game.SAVABLE["GAME_MIN_BET"] if command == 0 else 0
         if game.ROUND <= 1 and self.round_bet == 0:  # если сейчас ставки на префлопе, и игрок не делал ставок, то
             if self.is_sb:  # если игрок - м.блайнд, то обязательно ставим минимальную ставку
                 command = 0
-                bet = game.GAME_MIN_BET
+                bet = game.SAVABLE["GAME_MIN_BET"]
             elif self.is_bb:  # а если б.блайнд, то двойную минимальную ставку
                 command = 0
-                bet = game.GAME_MIN_BET * 2
+                bet = game.SAVABLE["GAME_MIN_BET"] * 2
         self.exec_command(command, bet)
 
 
@@ -155,7 +157,7 @@ def start_query(start_from_user=False):  # стартуем опрос игро�
 def set_queue(players, reset_players=False):  # настроить очередь
     if reset_players:
         game.PLAYERS = players
-        game.INITIAL_QUEUE = [i for i in range(game.PLAYERS_NUMBER)]
+        game.INITIAL_QUEUE = [i for i in range(game.SAVABLE["PLAYERS_NUMBER"])]
     random.shuffle(game.INITIAL_QUEUE)
     game.HISTORY_QUEUE = []
     for player in game.PLAYERS:
@@ -163,7 +165,7 @@ def set_queue(players, reset_players=False):  # настроить очеред�
         player.last_command = -1, 0
         player.round_bet = 0
         player.get_combination()
-        if player.bank < game.DEFAULT_BANK: player.bank = game.DEFAULT_BANK
+        if player.bank < game.SAVABLE["MIN_BANK"]: player.bank = game.SAVABLE["MIN_BANK"]
     game.PLAYERS[game.INITIAL_QUEUE[0]].is_sb = game.PLAYERS[game.INITIAL_QUEUE[1]].is_bb = True
 
 
@@ -187,7 +189,7 @@ def change_round(round_number=None):
 
 
 def reset_round():
-    game.CURRENT_MIN_BET = game.GAME_MIN_BET
+    game.CURRENT_MIN_BET = game.SAVABLE["GAME_MIN_BET"]
     game.LAST_RAISER = None
     game.IS_QUERY_ENDED = False
     game.ROUND_STEP = 0
@@ -254,13 +256,13 @@ def set_game(reset_players=True):
 
     players = game.PLAYERS
     if reset_players:
-        names = config.BOTS_NAMES.split(' ')  # берем все доступные имена
+        names = game.SAVABLE["STD_BOTS_NAMES"].split(' ')  # берем все доступные имена
         random.shuffle(names)  # перемешиваем имена
-        if config.USER_BOTS_NAMES != '':  # если пользователь задал имена, то они используются в первую очередь
-            user_names = config.USER_BOTS_NAMES.split()
+        if game.SAVABLE["USR_BOTS_NAMES"] != '':  # если пользователь задал имена, то они используются в первую очередь
+            user_names = game.SAVABLE["USR_BOTS_NAMES"].split()
             random.shuffle(user_names)
             names = user_names + names
-        players = [Bot(f'BOT_{names[i]}') for i in range(game.PLAYERS_NUMBER - 1)]  # создаем список игроков из ботов
+        players = [Bot(f'BOT_{names[i]}') for i in range(game.SAVABLE["PLAYERS_NUMBER"] - 1)]  # создаем список игроков из ботов
         shuffle_players(players)  # перемешиваем игроков
         players += [User('USR_User')]  # добавляем в список игроков пользователя, если игра с пользователем
     set_queue(players, reset_players)  # настраиваем игроков и очередь в конфигах
@@ -314,6 +316,18 @@ def get_available_commands_number(player):  # возвращает список 
     return commands + [4]
 
 
+class File:
+    @staticmethod
+    def save_settings():
+        with open('./game_settings.json', 'w+') as f: f.write(json.dumps(game.SAVABLE))
+        with open('./train_settings.json', 'w+') as f: f.write(json.dumps(train_settings.SAVABLE))
+
+    @staticmethod
+    def load_settings():
+        if os.path.exists('./game_settings.json'):
+            with open('./game_settings.json', 'r') as f: game.SAVABLE = json.loads(f.read())
+        if os.path.exists('./train_settings.json'):
+            with open('./train_settings.json', 'r') as f: train_settings.SAVABLE = json.loads(f.read())
 
 
 class Combination:

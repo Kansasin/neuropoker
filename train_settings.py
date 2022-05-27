@@ -1,15 +1,10 @@
-BOTS_NAMES = 'Oleg Igor Anton Pavel Alexander Egor Ivan Konstantin Ilya Denis Andrey Artem Vlad Vadim Viktor Danil Dmitriy Grigoriy Georgiy Maksim'  # допустимые имена ботов через пробел
-USER_BOTS_NAMES = ''  # пользовательские имена для ботов
-BOTS_MODE = 'passive'  # сложность ботов: passive - пассивные боты, random - боты со случайным поведением, trained - обученные боты
-
-SERIES_LENGTH = 5  # длина обучающей серии игр
-SERIES_NUMBER = 1000000  # количество серий
-BOTS_LEARNING_SERIES_LENGTH = 0  # время обучения ботов
-AUTOSAVES_FREQUENCY = 15  # частота автосохранений
-
-IMPORT_PATH = ''  # последний импортированный файл
-EXPORT_PATH = ''  # последний путь экспорта
-DB_PATH = ''  # текущий путь до базы данных
+SAVABLE = {
+    'SERIES_LENGTH': 5,  # длина обучающей серии игр
+    'SERIES_NUMBER': 1000000,  # количество серий
+    'AUTOSAVES_FREQUENCY': 15,  # частота автосохранений
+    'IMPORT_PATH': '',  # последний импортированный файл
+    'EXPORT_PATH': ''  # последний путь экспорта
+}
 
 RULES = """
 

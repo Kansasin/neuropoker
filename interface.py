@@ -1,4 +1,4 @@
-import config
+import train_settings
 import game_settings as game
 import poker
 from menu import *
@@ -18,7 +18,7 @@ def get_user_command_string(command, player):  # возвращает строк
     get_string = lambda: ''
     if command == 0: get_string = lambda: f'Поднять <{game.CURRENT_MIN_BET - player.round_bet + 1} - {player.bank - 1}>'
     elif command == 1:
-        if game.LAST_RAISER is None: get_string = lambda: f'Поднять {game.GAME_MIN_BET}'
+        if game.LAST_RAISER is None: get_string = lambda: f'Поднять {game.SAVABLE["GAME_MIN_BET"]}'
         else: get_string = lambda: f'Уравнять ({game.CURRENT_MIN_BET - player.round_bet})'
     elif command == 2: get_string = lambda: 'Пропустить'
     elif command == 3: get_string = lambda: f'Ва-банк ({player.bank})'
@@ -36,7 +36,7 @@ def get_command_string(command, player):  # возвращает строку к
     string = ''
     if command[0] == 0: string = f'Поднял {command[1]}'
     elif command[0] == 1:
-        if player.get_index() == game.LAST_RAISER: string = f'Поднял {game.GAME_MIN_BET}'
+        if player.get_index() == game.LAST_RAISER: string = f'Поднял {game.SAVABLE["GAME_MIN_BET"]}'
         else: string = f'Уравнял ({command[1]})'
     elif command[0] == 2: string = 'Пропустил'
     elif command[0] == 3: string = f'Ва-банк ({command[1]})'
@@ -45,13 +45,13 @@ def get_command_string(command, player):  # возвращает строку к
 
 
 def raise_command(*args):
-    bet = int(args[0][1]) if args else (game.CURRENT_MIN_BET + 1 if game.CURRENT_MIN_BET > game.GAME_MIN_BET else game.GAME_MIN_BET)
+    bet = int(args[0][1]) if args else (game.CURRENT_MIN_BET + 1 if game.CURRENT_MIN_BET > game.SAVABLE["GAME_MIN_BET"] else game.SAVABLE["GAME_MIN_BET"])
     game.PLAYERS[-1].do_command((0, bet), True)
     return get_round_menu(game.ROUND)()
 
 def blind_command():
-    if game.PLAYERS[-1].is_sb: game.PLAYERS[-1].do_command((0, game.GAME_MIN_BET), True)
-    if game.PLAYERS[-1].is_bb: game.PLAYERS[-1].do_command((0, game.GAME_MIN_BET * 2), True)
+    if game.PLAYERS[-1].is_sb: game.PLAYERS[-1].do_command((0, game.SAVABLE["GAME_MIN_BET"]), True)
+    if game.PLAYERS[-1].is_bb: game.PLAYERS[-1].do_command((0, game.SAVABLE["GAME_MIN_BET"] * 2), True)
     return get_round_menu(game.ROUND)()
 
 def call_command():
@@ -82,8 +82,8 @@ def get_available_commands_options():  # возвращает список до�
         return ('Продолжить', continue_command), ('Пауза', game_pause_menu)
     elif game.ROUND % 2 == 1:
         if game.ROUND == 1 and game.PLAYERS[-1].round_bet == 0 and (game.PLAYERS[-1].is_sb or game.PLAYERS[-1].is_bb):
-            if game.PLAYERS[-1].is_sb: return (f'Поднять {game.GAME_MIN_BET}', blind_command), ('Пауза', game_pause_menu)
-            if game.PLAYERS[-1].is_bb: return (f'Поднять {game.GAME_MIN_BET * 2}', blind_command), ('Пауза', game_pause_menu)
+            if game.PLAYERS[-1].is_sb: return (f'Поднять {game.SAVABLE["GAME_MIN_BET"]}', blind_command), ('Пауза', game_pause_menu)
+            if game.PLAYERS[-1].is_bb: return (f'Поднять {game.SAVABLE["GAME_MIN_BET"] * 2}', blind_command), ('Пауза', game_pause_menu)
         return [[get_user_command_string(command, game.PLAYERS[-1]), user_commands[command]] for command in poker.get_available_commands_number(game.PLAYERS[-1])] + [['Пауза', game_pause_menu]]
 
 
@@ -120,7 +120,7 @@ def get_queue_string():
     queue = [game.PLAYERS[x] for x in game.INITIAL_QUEUE]
     string = ''
     for player in queue:
-        cards = get_cards_string(player.get_cards(), (game.ROUND != 8) and (player.get_index() != game.PLAYERS_NUMBER - 1))
+        cards = get_cards_string(player.get_cards(), (game.ROUND != 8) and (player.get_index() != game.SAVABLE["PLAYERS_NUMBER"] - 1))
         string += f'{get_player_formatted_name(player)}\t{player.get_role()}\t{player.bank} ф.\t{cards}'
         if player.is_fold: string += '\tСбросил'
         else:
@@ -135,14 +135,15 @@ def get_queue_commands_string():  # тоже, что и get_queue_string(), то
     queue = [(game.PLAYERS[record[1]], (record[2], record[3]), record[5]) for record in game.HISTORY_QUEUE if record[0] == (game.ROUND if game.ROUND % 2 == 1 else game.ROUND - 1) and record[4] == game.ROUND_STEP]
     string = ''
     for player, command, bank in queue:
-        cards = get_cards_string(player.get_cards(), (game.ROUND == 8) or (player.get_index() != game.PLAYERS_NUMBER - 1))
+        cards = get_cards_string(player.get_cards(), (game.ROUND == 8) or (player.get_index() != game.SAVABLE["PLAYERS_NUMBER"] - 1))
         string += f'{get_player_formatted_name(player)}\t{player.get_role()}\t{bank} ф.\t{cards}:\t{get_command_string(command, player)}\n'
     if not game.IS_QUERY_ENDED: string += f'{get_player_formatted_name(game.PLAYERS[-1])}\t{game.PLAYERS[-1].get_role()}\t{game.PLAYERS[-1].bank} ф.\t{get_cards_string(game.PLAYERS[-1].get_cards())}:\n'
     return string
 
 
 def get_bots_mode_string():
-    return {'passive': 'Пассивные', 'random': 'С произвольным поведением', 'trained': 'Обученные'}[config.BOTS_MODE]
+    return {'passive': 'Пассивные', 'random': 'С произвольным поведением', 'trained': 'Обученные'}[
+        game.SAVABLE["BOTS_MODE"]]
 
 
 def main_menu():
@@ -154,6 +155,7 @@ def learn_settings_menu():
 
 
 def game_settings_menu():
+    poker.File.save_settings()
     menu_list['game_settings_menu'].print_menu()
 
 
@@ -280,7 +282,7 @@ def learning_bots_number_check(x):
         learn_settings_menu()
         return True
     elif 1 <= int(x) <= 10:
-        game.PLAYERS_NUMBER = int(x)
+        game.SAVABLE["PLAYERS_NUMBER"] = int(x)
         learn_settings_menu()
         return True
     return False
@@ -291,7 +293,7 @@ def series_length_check(x):
         learn_settings_menu()
         return True
     elif 1 <= int(x) <= 30:
-        config.SERIES_LENGTH = int(x)
+        train_settings.SAVABLE["SERIES_LENGTH"] = int(x)
         learn_settings_menu()
         return True
     return False
@@ -302,7 +304,7 @@ def series_number_check(x):
         learn_settings_menu()
         return True
     elif 1 <= int(x) <= 10000000:
-        config.SERIES_NUMBER = int(x)
+        train_settings.SAVABLE["SERIES_NUMBER"] = int(x)
         learn_settings_menu()
         return True
     return False
@@ -313,7 +315,7 @@ def autosaves_frequency_check(x):
         learn_settings_menu()
         return True
     elif 1 <= int(x) <= 120:
-        config.AUTOSAVES_FREQUENCY = int(x)
+        train_settings.SAVABLE["AUTOSAVES_FREQUENCY"] = int(x)
         learn_settings_menu()
         return True
     return False
@@ -324,7 +326,7 @@ def bots_number_check(x):
         game_settings_menu()
         return True
     elif 2 <= int(x) <= 10:
-        game.PLAYERS_NUMBER = int(x)
+        game.SAVABLE["PLAYERS_NUMBER"] = int(x)
         game_settings_menu()
         return True
     return False
@@ -334,7 +336,7 @@ def bots_names_check(x):
     if x == '':
         game_settings_menu()
         return True
-    config.USER_BOTS_NAMES = ' '.join([name for name in x.split() if 2 <= len(name) <= 16])
+    game.SAVABLE["USR_BOTS_NAMES"] = ' '.join([name for name in x.split() if 2 <= len(name) <= 16])
     game_settings_menu()
     return False
 
@@ -344,7 +346,7 @@ def min_bet_check(x):
         game_settings_menu()
         return True
     elif 50 <= int(x) <= 1000000:
-        game.GAME_MIN_BET = int(x)
+        game.SAVABLE["GAME_MIN_BET"] = int(x)
         game_settings_menu()
         return True
     return False
@@ -383,6 +385,7 @@ def erase_db_check(x):
 
 def main_check(x):
     if x.isdigit() and 1 <= int(x) <= 3:
+        poker.File.load_settings()
         return True
     main_menu()
     return False
@@ -396,7 +399,7 @@ def learn_settings_check(x):
 
 
 def game_settings_check(x):
-    if x.isdigit() and 1 <= int(x) <= 6:
+    if x.isdigit() and 1 <= int(x) <= 8:
         game.GAME_WITH_USER = False
         game.GAME_WAS_INITIALIZED = False
         return True
@@ -497,9 +500,9 @@ def pause_rules_check(x):
 
 def bots_mode_check(x):
     if x.isdigit() and 1 <= int(x) <= 3:
-        if int(x) == 1: config.BOTS_MODE = 'passive'
-        elif int(x) == 2: config.BOTS_MODE = 'random'
-        elif int(x) == 3: config.BOTS_MODE = 'trained'
+        if int(x) == 1: game.SAVABLE["BOTS_MODE"] = 'passive'
+        elif int(x) == 2: game.SAVABLE["BOTS_MODE"] = 'random'
+        elif int(x) == 3: game.SAVABLE["BOTS_MODE"] = 'trained'
         game_settings_menu()
         return True
     game_settings_menu()
@@ -508,7 +511,7 @@ def bots_mode_check(x):
 
 def min_bank_check(x):
     if x.isdigit() and 500 <= int(x) <= 10000000:
-        game.DEFAULT_BANK = int(x)
+        game.SAVABLE["MIN_BANK"] = int(x)
         game_settings_menu()
         return True
     game_settings_menu()
@@ -532,10 +535,10 @@ menu_list = {
         ['Начать обучение', start_learning_menu],
         ['Вернуться в Главное меню', main_menu]
     ], TextInput('Выберите номер команды: ', learn_settings_check)),
-    'learning_players_number_menu': Menu(lambda: f'Настройки обучения: Количество ботов - {game.PLAYERS_NUMBER}', [], TextInput('Введите количество ботов (1-10): ', learning_bots_number_check)),
-    'series_length_menu': Menu(lambda: f'Настройки обучения: Длина серии игр - {config.SERIES_LENGTH}', [], TextInput('Введите длину серии игр (1-30): ', series_length_check)),
-    'series_number_menu': Menu(lambda: f'Настройки обучения: Количество серий игр - {config.SERIES_NUMBER}', [], TextInput('Введите количество обучающих серий (1-10000000): ', series_number_check)),
-    'autosaves_frequency_menu': Menu(lambda: f'Настройки обучения: Частота автосохранений - {config.AUTOSAVES_FREQUENCY}', [], TextInput('Введите частоту автосохранений (до 120 минут): ', autosaves_frequency_check)),
+    'learning_players_number_menu': Menu(lambda: f'Настройки обучения: Количество ботов - {game.SAVABLE["PLAYERS_NUMBER"]}', [], TextInput('Введите количество ботов (1-10): ', learning_bots_number_check)),
+    'series_length_menu': Menu(lambda: f'Настройки обучения: Длина серии игр - {train_settings.SAVABLE["SERIES_LENGTH"]}', [], TextInput('Введите длину серии игр (1-30): ', series_length_check)),
+    'series_number_menu': Menu(lambda: f'Настройки обучения: Количество серий игр - {train_settings.SAVABLE["SERIES_NUMBER"]}', [], TextInput('Введите количество обучающих серий (1-10000000): ', series_number_check)),
+    'autosaves_frequency_menu': Menu(lambda: f'Настройки обучения: Частота автосохранений - {train_settings.SAVABLE["AUTOSAVES_FREQUENCY"]}', [], TextInput('Введите частоту автосохранений (до 120 минут): ', autosaves_frequency_check)),
 
     'game_settings_menu': Menu('Настройки игры:', [
         ['Создать игру', game_initialization_menu],
@@ -547,11 +550,11 @@ menu_list = {
         ['Правила игры', rules_menu],
         ['Вернуться в Главное меню', main_menu]
     ], TextInput('Выберите номер команды: ', game_settings_check)),
-    'players_number_menu': Menu(lambda: f'Настройки игры: Количество игроков - {game.PLAYERS_NUMBER}', [], TextInput('Введите количество игроков (2-10): ', bots_number_check)),
-    'min_bank_menu': Menu(lambda: f'Настройки игры: Минимальный банк игроков - {game.DEFAULT_BANK}', [], TextInput('Введите минимальный банк игроков (500-10000000): ', min_bank_check)),
+    'players_number_menu': Menu(lambda: f'Настройки игры: Количество игроков - {game.SAVABLE["PLAYERS_NUMBER"]}', [], TextInput('Введите количество игроков (2-10): ', bots_number_check)),
+    'min_bank_menu': Menu(lambda: f'Настройки игры: Минимальный банк игроков - {game.SAVABLE["MIN_BANK"]}', [], TextInput('Введите минимальный банк игроков (500-10000000): ', min_bank_check)),
     'bots_names_menu': Menu('Настройки игры: Имена ботов', [], TextInput('Введите новые имена ботов через пробел: ', bots_names_check)),
-    'min_bet_menu': Menu(lambda: f'Настройки игры: Минимальная ставка - {game.GAME_MIN_BET}', [], TextInput('Введите минимальную ставку (50-1000000): ', min_bet_check)),
-    'rules_menu': Menu(lambda: f'Настройки игры: Правила игры - {config.RULES}', [], TextInput('Введите Хоп-хей-ла-лей, чтобы продолжить: ', rules_check)),
+    'min_bet_menu': Menu(lambda: f'Настройки игры: Минимальная ставка - {game.SAVABLE["GAME_MIN_BET"]}', [], TextInput('Введите минимальную ставку (50-1000000): ', min_bet_check)),
+    'rules_menu': Menu(lambda: f'Настройки игры: Правила игры - {train_settings.RULES}', [], TextInput('Введите Хоп-хей-ла-лей, чтобы продолжить: ', rules_check)),
     'bots_mode_menu': Menu(lambda: f'Настройки игры: Сложность ботов - {get_bots_mode_string()}', [
         ['Пассивные боты', game_settings_menu],
         ['Боты с произвольным поведением', game_settings_menu],
@@ -565,11 +568,11 @@ menu_list = {
         ['Вернуться в Настройки обучения', game_settings_menu],
         ['Вернуться в Главное меню', main_menu],
     ], TextInput('Выберите номер команды: ', db_settings_check)),
-    'import_db_menu': Menu(lambda: f'Настройки базы данных: Путь до последнего импортированного файла базы данных - {config.IMPORT_PATH}', [], TextInput('Введите путь до импортируемой базы данных: ', import_db_check)),
-    'export_db_menu': Menu(lambda: f'Настройки базы данных: Путь до последнего экпортированного файла базы данных - {config.EXPORT_PATH}', [], TextInput('Введите путь сохранения базы данных: ', export_db_check)),
-    'erase_db_menu': Menu(lambda: f'Настройки базы данных: Очистка файла базы данных - {config.DB_PATH}', [], TextInput('Файл базы данных будет очищен. Вы уверены? ', erase_db_check)),
+    'import_db_menu': Menu(lambda: f'Настройки базы данных: Путь до последнего импортированного файла базы данных - {train_settings.SAVABLE["IMPORT_PATH"]}', [], TextInput('Введите путь до импортируемой базы данных: ', import_db_check)),
+    'export_db_menu': Menu(lambda: f'Настройки базы данных: Путь до последнего экпортированного файла базы данных - {train_settings.SAVABLE["EXPORT_PATH"]}', [], TextInput('Введите путь сохранения базы данных: ', export_db_check)),
+    'erase_db_menu': Menu(lambda: f'Настройки базы данных: Очистка файла базы данных - {train_settings.SAVABLE["IMPORT_PATH"]}', [], TextInput('Файл базы данных будет очищен. Вы уверены? ', erase_db_check)),
 
-    'game_initialization_menu': Menu(lambda: f'Инициализация игры\nКоличество игроков: {game.PLAYERS_NUMBER}\nМинимальная ставка: {game.GAME_MIN_BET}\nВремя обучения ботов: {config.BOTS_LEARNING_SERIES_LENGTH}', [
+    'game_initialization_menu': Menu(lambda: f'Инициализация игры\nКоличество игроков: {game.SAVABLE["PLAYERS_NUMBER"]}\nМинимальная ставка: {game.SAVABLE["GAME_MIN_BET"]}\nСложность ботов: {get_bots_mode_string()}', [
         ['Начать игру', get_round_menu(0)],
         ['Вернуться к Настройкам игры', game_settings_menu],
         ['Вернуться в Главное меню', main_menu],
@@ -613,7 +616,7 @@ menu_list = {
         ['Помощь', pause_rules_menu],
         ['Вернуться в Главное меню', main_menu],
     ], TextInput('Введите номер команды: ', lambda x: x)),
-    'pause_rules_menu': Menu(lambda: f'Пауза: Правила игры - {config.RULES}', [], TextInput('Введите Хоп-хей-ла-лей, чтобы продолжить: ', pause_rules_check)),
+    'pause_rules_menu': Menu(lambda: f'Пауза: Правила игры - {train_settings.RULES}', [], TextInput('Введите Хоп-хей-ла-лей, чтобы продолжить: ', pause_rules_check)),
 }
 
 
