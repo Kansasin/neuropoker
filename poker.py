@@ -62,6 +62,7 @@ class Player:
             game.ROUND_STEP += 1
         elif command == 1:  # уравнять
             bet = game.CURRENT_MIN_BET - self.round_bet
+            if game.LAST_RAISER is None: game.LAST_RAISER = self.get_index()
         elif command == 2:  # пропустить
             bet = 0
         elif command == 3:  # ва-банк
@@ -100,16 +101,18 @@ class Bot(Player):
         super().__init__(name)
         self.is_user = False
 
-    def do_command(self, do_random=True):  # возвращает кортеж из номера команды и размера ставки исходя из списка доступных команд
+    def do_command(self):  # возвращает кортеж из номера команды и размера ставки исходя из списка доступных команд
         if self.is_fold or self.bank <= 0 or game.IS_QUERY_ENDED: return
         available_commands = get_available_commands_number(self)
         # print(self.name, available_commands)
         # breakpoint()
-        if do_random:
+        command = -1
+        bet = 0
+        if config.BOTS_MODE == 'random':
             command = available_commands[random.randint(0, len(available_commands) - 1)]
             min_bet = (game.CURRENT_MIN_BET + 1 if game.CURRENT_MIN_BET > game.GAME_MIN_BET else game.GAME_MIN_BET) - self.round_bet
             bet = random.randint(min_bet, self.bank - 1) if command == 0 else 0
-        else:
+        elif config.BOTS_MODE in ['passive', 'trained']:
             command = 4
             if 2 in available_commands: command = 2
             elif 1 in available_commands: command = 1
@@ -142,7 +145,7 @@ shuffle_players = lambda players: random.shuffle(players)  # перемешат�
 def start_query(start_from_user=False):  # стартуем опрос игроков от начала или от пользователя, если надо было прерваться на получение его ввода
     player = game.PLAYERS[-1].get_next_player() if start_from_user else game.PLAYERS[game.INITIAL_QUEUE[0]]
     while not game.IS_QUERY_ENDED and not player.is_user:
-        player.do_command(do_random=False)
+        player.do_command()
         player = player.get_next_player()
     if game.IS_QUERY_ENDED:
         if start_from_user: return

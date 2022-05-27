@@ -45,7 +45,7 @@ def get_command_string(command, player):  # возвращает строку к
 
 
 def raise_command(*args):
-    bet = int(args[1]) if args else (game.CURRENT_MIN_BET + 1 if game.CURRENT_MIN_BET > game.GAME_MIN_BET else game.GAME_MIN_BET)
+    bet = int(args[0][1]) if args else (game.CURRENT_MIN_BET + 1 if game.CURRENT_MIN_BET > game.GAME_MIN_BET else game.GAME_MIN_BET)
     game.PLAYERS[-1].do_command((0, bet), True)
     return get_round_menu(game.ROUND)()
 
@@ -97,10 +97,13 @@ def get_cards_string(cards, hide=False):
 def get_combination_string(player):
     high_card = poker.Combination.sort_cards(player.combination[1], reverse=True)[0]
     second_card = poker.Combination.sort_cards(player.combination[1], reverse=True)[2] if player.combination[0] == 3 else None
+    if player.combination[0] == 7:
+        high_card = player.combination[1][0]
+        second_card = player.combination[1][-1]
     kicker_card = poker.Combination.sort_cards(player.combination[2], reverse=True)[0] if len(player.combination[2]) > 0 else None
     if player.combination[0] == 9: return f'Стрит-флеш {high_card.icon}'
     if player.combination[0] == 8: return f'Каре {high_card.icon}, кикер {kicker_card.icon}'
-    if player.combination[0] == 7: return f'Фул-хаус, {high_card.icon}'
+    if player.combination[0] == 7: return f'Фул-хаус {high_card.icon} и {second_card.icon}'
     if player.combination[0] == 6: return f'Флеш {high_card.icon}'
     if player.combination[0] == 5: return f'Стрит {high_card.icon}'
     if player.combination[0] == 4: return f'Сет {high_card.icon}, кикер {kicker_card.icon}'
@@ -132,6 +135,10 @@ def get_queue_commands_string():  # тоже, что и get_queue_string(), то
         string += f'{player.name}\t{player.get_role()}\t{bank} ф.\t{cards}:\t{get_command_string(command, player)}\n'
     if not game.IS_QUERY_ENDED: string += f'{game.PLAYERS[-1].name}\t{game.PLAYERS[-1].get_role()}\t{game.PLAYERS[-1].bank} ф.\t{get_cards_string(game.PLAYERS[-1].get_cards())}:\n'
     return string
+
+
+def get_bots_mode_string():
+    return {'passive': 'Пассивные', 'random': 'С произвольным поведением', 'trained': 'Обученные'}[config.BOTS_MODE]
 
 
 def main_menu():
@@ -253,6 +260,15 @@ def return_to_game():
 
 def pause_rules_menu():
     menu_list['pause_rules_menu'].print_menu()
+
+
+def min_bank_menu():
+    menu_list['min_bank_menu'].print_menu()
+
+
+def bots_mode_menu():
+    menu_list['bots_mode_menu'].print_menu()
+
 
 
 def learning_bots_number_check(x):
@@ -475,6 +491,26 @@ def pause_rules_check(x):
     return False
 
 
+def bots_mode_check(x):
+    if x.isdigit() and 1 <= int(x) <= 3:
+        if int(x) == 1: config.BOTS_MODE = 'passive'
+        elif int(x) == 2: config.BOTS_MODE = 'random'
+        elif int(x) == 3: config.BOTS_MODE = 'trained'
+        game_settings_menu()
+        return True
+    game_settings_menu()
+    return False
+
+
+def min_bank_check(x):
+    if x.isdigit() and 500 <= int(x) <= 10000000:
+        game.DEFAULT_BANK = int(x)
+        game_settings_menu()
+        return True
+    game_settings_menu()
+    return False
+
+
 menu_list = {
     # '': Menu('', [], TextInput('', lambda x: x)),
     'main_menu': Menu('Главное меню:', [
@@ -498,17 +534,25 @@ menu_list = {
     'autosaves_frequency_menu': Menu(lambda: f'Настройки обучения: Частота автосохранений - {config.AUTOSAVES_FREQUENCY}', [], TextInput('Введите частоту автосохранений (до 120 минут): ', autosaves_frequency_check)),
 
     'game_settings_menu': Menu('Настройки игры:', [
-        ['Количество игроков', players_number_menu],
-        ['Имена ботов', bots_names_menu],
-        ['Минимальная ставка', min_bet_menu],
-        ['Правила игры', rules_menu],
         ['Создать игру', game_initialization_menu],
+        ['Минимальная ставка', min_bet_menu],
+        ['Минимальный банк игроков', min_bank_menu],
+        ['Количество игроков', players_number_menu],
+        ['Сложность ботов', bots_mode_menu],
+        ['Имена ботов', bots_names_menu],
+        ['Правила игры', rules_menu],
         ['Вернуться в Главное меню', main_menu]
     ], TextInput('Выберите номер команды: ', game_settings_check)),
     'players_number_menu': Menu(lambda: f'Настройки игры: Количество игроков - {game.PLAYERS_NUMBER}', [], TextInput('Введите количество игроков (2-10): ', bots_number_check)),
+    'min_bank_menu': Menu(lambda: f'Настройки игры: Минимальный банк игроков - {game.DEFAULT_BANK}', [], TextInput('Введите минимальный банк игроков (500-10000000): ', min_bank_check)),
     'bots_names_menu': Menu('Настройки игры: Имена ботов', [], TextInput('Введите новые имена ботов через пробел: ', bots_names_check)),
     'min_bet_menu': Menu(lambda: f'Настройки игры: Минимальная ставка - {game.GAME_MIN_BET}', [], TextInput('Введите минимальную ставку (50-1000000): ', min_bet_check)),
     'rules_menu': Menu(lambda: f'Настройки игры: Правила игры - {config.RULES}', [], TextInput('Введите Хоп-хей-ла-лей, чтобы продолжить: ', rules_check)),
+    'bots_mode_menu': Menu(lambda: f'Настройки игры: Сложность ботов - {get_bots_mode_string()}', [
+        ['Пассивные боты', game_settings_menu],
+        ['Боты с произвольным поведением', game_settings_menu],
+        ['Обученные боты', game_settings_menu]
+    ], TextInput('Введите номер уровня сложности: ', bots_mode_check)),
 
     'db_settings_menu': Menu('Настройки базы данных', [
         ['Импорт базы данных', import_db_menu],
@@ -567,6 +611,8 @@ menu_list = {
     ], TextInput('Введите номер команды: ', lambda x: x)),
     'pause_rules_menu': Menu(lambda: f'Пауза: Правила игры - {config.RULES}', [], TextInput('Введите Хоп-хей-ла-лей, чтобы продолжить: ', pause_rules_check)),
 }
+
+
 
 
 def start():
