@@ -112,12 +112,16 @@ def get_combination_string(player):
     if player.combination[0] == 1: return f'Старшая карта {player.combination[1][0].icon}'
 
 
+def get_player_formatted_name(player):
+    return format(player.name, ' <20')
+
+
 def get_queue_string():
     queue = [game.PLAYERS[x] for x in game.INITIAL_QUEUE]
     string = ''
     for player in queue:
         cards = get_cards_string(player.get_cards(), (game.ROUND != 8) and (player.get_index() != game.PLAYERS_NUMBER - 1))
-        string += f'{player.name}\t{player.get_role()}\t{player.bank} ф.\t{cards}'
+        string += f'{get_player_formatted_name(player)}\t{player.get_role()}\t{player.bank} ф.\t{cards}'
         if player.is_fold: string += '\tСбросил'
         else:
             if game.ROUND == 8: string += f'\t{get_combination_string(player) if player.bank > 0 else get_combination_string(player)}'
@@ -132,8 +136,8 @@ def get_queue_commands_string():  # тоже, что и get_queue_string(), то
     string = ''
     for player, command, bank in queue:
         cards = get_cards_string(player.get_cards(), (game.ROUND == 8) or (player.get_index() != game.PLAYERS_NUMBER - 1))
-        string += f'{player.name}\t{player.get_role()}\t{bank} ф.\t{cards}:\t{get_command_string(command, player)}\n'
-    if not game.IS_QUERY_ENDED: string += f'{game.PLAYERS[-1].name}\t{game.PLAYERS[-1].get_role()}\t{game.PLAYERS[-1].bank} ф.\t{get_cards_string(game.PLAYERS[-1].get_cards())}:\n'
+        string += f'{get_player_formatted_name(player)}\t{player.get_role()}\t{bank} ф.\t{cards}:\t{get_command_string(command, player)}\n'
+    if not game.IS_QUERY_ENDED: string += f'{get_player_formatted_name(game.PLAYERS[-1])}\t{game.PLAYERS[-1].get_role()}\t{game.PLAYERS[-1].bank} ф.\t{get_cards_string(game.PLAYERS[-1].get_cards())}:\n'
     return string
 
 
