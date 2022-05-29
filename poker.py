@@ -89,8 +89,9 @@ class Player:
         # else: print(f'Никто не поднял еще, минимальная ставка {game.CURRENT_MIN_BET} ф.')
         # breakpoint()
 
-    def get_combination(self):
-        self.combination = Combination.get_combination_level(self.get_cards() + game.CARDS[-5:])
+    def get_combination(self, cards=None):
+        if cards is None: cards = self.get_cards() + game.CARDS[-5:]
+        self.combination = Combination.get_combination_level(cards)
         # print(self.name)
         # print([card.icon for card in self.get_cards()], [card.icon for card in game.CARDS[-5:]])
         # print(self.combination[0], [card.icon for card in self.combination[1]], [card.icon for card in self.combination[2]], sep="\n")
@@ -357,36 +358,49 @@ class Combination:
                 combination = Combination.get_combination_level(cards[:7])
                 count[combination[0]] += 1
             print({i: format(stat / num * 100, '.2f') + '%' for i, stat in count.items()})
-        elif test_name == 'winner':
-            cards = [Card(rank, flush) for rank in ranks for flush in flushes]
+        elif test_name == 'winner':  # добавить инициализацию игроков, чтобы можно было затестить Combination.get_winners()
+            available_ranks = [ranks[0], ranks[1], ranks[2], ranks[3], ranks[12], ranks[4]]
+            cards = [Card(rank, flush) for rank in available_ranks for flush in flushes[:2]]
             shuffle_cards(cards)
-            combination1 = Combination.get_combination_level(cards[:7])
-            combination2 = Combination.get_combination_level(cards[2:9])
+            player1 = Player('Player1')
+            player2 = Player('Player2')
+            player1.get_combination(cards[0:7])
+            player2.get_combination(cards[2:9])
             print([card.icon for card in cards[2:7]])
             print([card.icon for card in cards[0:2]])
             print([card.icon for card in cards[7:9]], end="\n\n")
-            print(combination1[0], [card.icon for card in combination1[1]], [card.icon for card in combination1[2]], end="\n\n")
-            print(combination2[0], [card.icon for card in combination2[1]], [card.icon for card in combination2[2]], end="\n\n")
-            if combination1[0] == combination2[0]:
-                comparison = Combination.compare_cards(combination1[1], combination2[1]), Combination.compare_cards(combination1[2], combination2[2])
-            else:
-                comparison = [0] if combination1[0] > combination2[0] else [1]
-            print(comparison)
+            print(player1.combination[0], [card.icon for card in player1.combination[1]], [card.icon for card in player1.combination[2]], end="\n\n")
+            print(player2.combination[0], [card.icon for card in player2.combination[1]], [card.icon for card in player2.combination[2]], end="\n\n")
+            print([player.name for player in Combination.get_winners([player1, player2])])
 
             while input("any symbol to end, enter to continue... ") == '':
                 shuffle_cards(cards)
-                combination1 = Combination.get_combination_level(cards[:7])
-                combination2 = Combination.get_combination_level(cards[2:9])
+                player1 = Player('Player1')
+                player2 = Player('Player2')
+                player1.get_combination(cards[2:9])
+                player2.get_combination(cards[0:7])
                 print([card.icon for card in cards[2:7]])
-                print([card.icon for card in cards[0:2]])
-                print([card.icon for card in cards[7:9]], end="\n\n")
-                print(combination1[0], [card.icon for card in combination1[1]], [card.icon for card in combination1[2]], end="\n\n")
-                print(combination2[0], [card.icon for card in combination2[1]], [card.icon for card in combination2[2]], end="\n\n")
-                if combination1[0] == combination2[0]:
-                    comparison = Combination.compare_cards(combination1[1], combination2[1]), Combination.compare_cards(combination1[2], combination2[2])
-                else:
-                    comparison = [0] if combination1[0] > combination2[0] else [1]
-                print(comparison)
+                print([card.icon for card in cards[7:9]])
+                print([card.icon for card in cards[0:2]], end="\n\n")
+                print(player1.combination[0], [card.icon for card in player1.combination[1]], [card.icon for card in player1.combination[2]], end="\n\n")
+                print(player2.combination[0], [card.icon for card in player2.combination[1]], [card.icon for card in player2.combination[2]], end="\n\n")
+                print([player.name for player in Combination.get_winners([player1, player2])])
+        elif test_name == 'combo':
+            available_ranks = [ranks[0], ranks[1], ranks[2], ranks[3], ranks[12]]
+            cards = [Card(rank, flushes[0]) for rank in available_ranks]
+            shuffle_cards(cards)
+            print([card.icon for card in cards[:7]])
+            combination = Combination.get_combination_level(cards[:7])
+            print(combination[0])
+            print([card.icon for card in combination[1]])
+            print([card.icon for card in combination[2]])
+            while input("any symbol to end, enter to continue... ") == '':
+                shuffle_cards(cards)
+                print([card.icon for card in cards[:7]])
+                combination = Combination.get_combination_level(cards[:7])
+                print(combination[0])
+                print([card.icon for card in combination[1]])
+                print([card.icon for card in combination[2]])
 
 
     @staticmethod
@@ -405,6 +419,13 @@ class Combination:
             if player == winners[0]: continue
             if player.combination[0] == winners[0].combination[0]:
                 high_card_comparison = Combination.compare_cards(player.combination[1], winners[0].combination[1])
+                if player.combination[0] in [5, 9]:
+                    if winners[0].combination[1][-1].rank.is_ace and winners[0].combination[1][0].rank == 1 and player.combination[1][-1].rank.is_ace and player.combination[1][0].rank == 1:
+                        high_card_comparison = [0, 1]
+                    elif player.combination[1][-1].rank.is_ace and player.combination[1][0].rank == 1:
+                        high_card_comparison = [0]
+                    elif winners[0].combination[1][-1].rank.is_ace and winners[0].combination[1][0].rank == 1:
+                        high_card_comparison = [1]
                 if len(high_card_comparison) == 2:
                     kicker_card_comparison = Combination.compare_cards(player.combination[2], winners[0].combination[2])
                     if len(kicker_card_comparison) == 2: winners.append(player)
@@ -463,6 +484,7 @@ class Combination:
             if duplicate1[0].rank.level == duplicate2[0].rank.level + 1: straight.append(duplicate2)
             else: straight = [duplicate2]
             if len(straight) >= 5: break
+        if duplicates[-1][0].rank.level == 1 and duplicates[0][0].rank.level == 13: straight += duplicates[:1]
         if len(straight) < 5: return []
         return straight[-5:] if return_duplicates else [duplicate[0] for duplicate in straight[-5:]]
     @staticmethod
@@ -504,4 +526,4 @@ class Combination:
         return result if len(result[0] + result[1]) == 5 else []
 
 if __name__ == '__main__':
-    Combination.test('statistic')
+    Combination.test('winner')
