@@ -326,9 +326,13 @@ class File:
     @staticmethod
     def load_settings():
         if os.path.exists('./game_settings.json'):
-            with open('./game_settings.json', 'r') as f: game.SAVABLE = json.loads(f.read())
+            with open('./game_settings.json', 'r') as f:
+                for key, value in json.loads(f.read()).items():
+                    game.SAVABLE[key] = value
         if os.path.exists('./train_settings.json'):
-            with open('./train_settings.json', 'r') as f: train_settings.SAVABLE = json.loads(f.read())
+            with open('./train_settings.json', 'r') as f:
+                for key, value in json.loads(f.read()).items():
+                    train_settings.SAVABLE[key] = value
 
 
 class Combination:
