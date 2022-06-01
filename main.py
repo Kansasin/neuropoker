@@ -1,5 +1,5 @@
 from poker import *
-from interface import *
+from ui import *
 import os
 
 if __name__ == '__main__':

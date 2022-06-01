@@ -1,9 +1,8 @@
 import train_settings
 import game_settings as game
 import poker
+from file import File
 from menu import *
-
-border = '\n--------------------------------------------------\n'
 
 
 def get_round_menu(round_number):
@@ -155,7 +154,7 @@ def learn_settings_menu():
 
 
 def game_settings_menu():
-    poker.File.save_settings()
+    File.save_settings(game, train_settings)
     menu_list['game_settings_menu'].print_menu()
 
 
@@ -385,7 +384,7 @@ def erase_db_check(x):
 
 def main_check(x):
     if x.isdigit() and 1 <= int(x) <= 3:
-        poker.File.load_settings()
+        File.load_settings(game, train_settings)
         return True
     main_menu()
     return False

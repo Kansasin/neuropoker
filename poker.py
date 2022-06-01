@@ -1,8 +1,6 @@
 import random
-import train_settings
 import game_settings as game
-import json
-import os
+import ai
 
 
 class Player:
@@ -103,6 +101,7 @@ class Bot(Player):
     def __init__(self, name):
         super().__init__(name)
         self.is_user = False
+        self.brain = ai.Brain()
 
     def do_command(self):  # возвращает кортеж из номера команды и размера ставки исходя из списка доступных команд
         if self.is_fold or self.bank <= 0 or game.IS_QUERY_ENDED: return
@@ -115,12 +114,14 @@ class Bot(Player):
             command = available_commands[random.randint(0, len(available_commands) - 1)]
             min_bet = (game.CURRENT_MIN_BET + 1 if game.CURRENT_MIN_BET > game.SAVABLE["GAME_MIN_BET"] else game.SAVABLE["GAME_MIN_BET"]) - self.round_bet
             bet = random.randint(min_bet, self.bank - 1) if command == 0 else 0
-        elif game.SAVABLE["BOTS_MODE"] in ['passive', 'trained']:
+        elif game.SAVABLE["BOTS_MODE"] in ['passive']:
             command = 4
             if 2 in available_commands: command = 2
             elif 1 in available_commands: command = 1
             elif 3 in available_commands: command = 3
             bet = game.SAVABLE["GAME_MIN_BET"] if command == 0 else 0
+        elif game.SAVABLE["BOTS_MODE"] == 'trained':
+            command, bet = self.brain.get_command(game.PLAYERS, game.CURRENT_MIN_BET, game.BANK, self, game.COMMON_CARDS, available_commands)
         if game.ROUND <= 1 and self.round_bet == 0:  # если сейчас ставки на префлопе, и игрок не делал ставок, то
             if self.is_sb:  # если игрок - м.блайнд, то обязательно ставим минимальную ставку
                 command = 0
@@ -315,24 +316,6 @@ def get_available_commands_number(player):  # возвращает список 
     if is_bets_equal(): commands += [2]
     if player.bank > 0: commands += [3]
     return commands + [4]
-
-
-class File:
-    @staticmethod
-    def save_settings():
-        with open('./game_settings.json', 'w+') as f: f.write(json.dumps(game.SAVABLE))
-        with open('./train_settings.json', 'w+') as f: f.write(json.dumps(train_settings.SAVABLE))
-
-    @staticmethod
-    def load_settings():
-        if os.path.exists('./game_settings.json'):
-            with open('./game_settings.json', 'r') as f:
-                for key, value in json.loads(f.read()).items():
-                    game.SAVABLE[key] = value
-        if os.path.exists('./train_settings.json'):
-            with open('./train_settings.json', 'r') as f:
-                for key, value in json.loads(f.read()).items():
-                    train_settings.SAVABLE[key] = value
 
 
 class Combination:
