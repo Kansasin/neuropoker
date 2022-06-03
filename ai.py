@@ -3,25 +3,36 @@ import numpy as np
 import game_settings
 
 
-def vectorize_cards(cards):
-    ranks = [card.rank.level for card in cards]
-    flushes = [card.flush.name for card in cards]
-    return ranks, flushes
+def scale_cards(cards):
+    pass
+
+
+def get_minmax_scaled_array(array):  # шкалирование числовых данных
+    return np.array(list(map(lambda x: (x - array.min()) / (array.max() - array.min()), array)))
+
+
+def get_nominal_scaled_array(array):  # шкалирование категориальных номинальных данных
+    pass
+
+
+def get_ordinal_scaled_array(array):  # шкалирование категориальных порядковых данных
+    pass
 
 
 class Brain:
     def __init__(self):
-        self.weights = [None, None, None]
+        self.weights = [None, None, None, None]
+        self.gen_weights()
 
     def gen_weights(self):  # генерирует матрицы весов
         self.weights[0] = np.random.random((33, 10))  # вход к первому слою
         self.weights[1] = np.random.random((10, 10))  # первый слой к первому слою
         self.weights[2] = np.random.random((10, 10))  # первый слой к второму слою
-        self.weights[3] = np.random.random((10, 2))  # второй слой к выходу
+        self.weights[3] = np.random.random((10, 7))  # второй слой к выходу
 
-    def mutate_weights(self):  # после отбора среди победителей будут клоны и мутанты. Эта функция делает мутантов
+    def mutate_weights(self, uphold=False):  # после отбора среди победителей будут клоны и мутанты. Эта функция делает мутантов
         for matrix in self.weights:
-            matrix *= random.random() / 100
+            matrix *= random.random() / 100 + (uphold if uphold else round(random.random()))  # если uphold=True, то укрепляем веса, иначе или укрепляем, или ослабляем их
 
     @staticmethod
     def get_output(input_layer, weights):  # возращает активированное произведение весов на текущие значения нейронов
@@ -33,12 +44,11 @@ class Brain:
         output2 = Brain.get_output(output1, self.weights[1])
         output2 = Brain.get_output(output2, self.weights[2])
         output = Brain.get_output(output2, self.weights[3])
-        if output[0] > 0.2 and 4 in available_commands: return 4, 0  # сбросить
-        elif output[0] > 0.4 and 3 in available_commands: return 3, 0  # ва-банк
-        elif output[0] > 0.6 and 2 in available_commands: return 2, 0  # пропустить
-        elif output[0] > 0.8 and 1 in available_commands: return 1, 0  # уравнять
-        elif output[0] > 1 and 0 in available_commands: return 0, output[1]  # поднять, output[1] - процент от допустимой ставки
-
-
-
-
+        # available_commands = [0 - поднять, 1 - уравнять, 2 - пропустить, 3 - ва-банк, 4 - сбросить]
+        # output = [поднять минимум, уравнять, пропустить, ва-банк, сбросить, поднять два минимума, поднять три минимума]
+        # присваиваем каждому выходу свою команду, фильтруем их по наличию в списке доступных команд, сортируем по убыванию, берем первый элемент
+        command = sorted(filter(lambda _: _[1] in available_commands, [(output[i], i) for i in range(5)] + [(output[5], 0), (output[6], 0)]), key=lambda _: _[0], reverse=True)[0]
+        if command[0] == 0: return 0, min_bet
+        if command[0] == 5: return 0, min_bet * 2
+        if command[0] == 6: return 0, min_bet * 3
+        return command[1], 0
