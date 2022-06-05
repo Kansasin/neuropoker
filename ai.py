@@ -1,22 +1,42 @@
 import random
 import numpy as np
-import game_settings
 
 
 def scale_cards(cards):
-    pass
+    ranks = list(get_ordinal_scaled_array([card.rank.level for card in cards], {level: level for level in range(1, 14)}))
+    flushes = list(get_nominal_scaled_array([card.flush.name for card in cards], {'D', 'C', 'P', 'H'}))
+    result = []
+    for i in range(len(cards)):
+        result += flushes[i] + [ranks[i]]
+    return result
+
+
+def scale_commands(commands):
+    commands_types = get_nominal_scaled_array([command[0] for command in commands], {0, 1, 2, 3, 4})
+    bets = [command[1] for command in commands]
+    result = []
+    for i in range(len(commands)):
+        result += commands_types[i] + [bets[i]]
+    return result
 
 
 def get_minmax_scaled_array(array):  # шкалирование числовых данных
+    array = np.array(array)
     return np.array(list(map(lambda x: (x - array.min()) / (array.max() - array.min()), array)))
 
 
-def get_nominal_scaled_array(array):  # шкалирование категориальных номинальных данных
-    pass
+def get_nominal_scaled_array(array, names_set):  # шкалирование категориальных номинальных данных
+    array = np.array(array)
+    return np.array([[name == item for name in names_set] for item in array])
 
 
-def get_ordinal_scaled_array(array):  # шкалирование категориальных порядковых данных
-    pass
+def get_ordinal_scaled_array(array, names_dict):  # шкалирование категориальных порядковых данных
+    array = np.array(array)
+    return get_minmax_scaled_array(np.array([names_dict[item] for item in array]))
+
+
+def scale_bank(chips, bank):
+    return chips / bank - 1
 
 
 class Brain:
@@ -35,12 +55,20 @@ class Brain:
             matrix *= random.random() / 100 + (uphold if uphold else round(random.random()))  # если uphold=True, то укрепляем веса, иначе или укрепляем, или ослабляем их
 
     @staticmethod
+    def activate(x):
+        return 1 / (1 + np.exp(-x))
+
+    @staticmethod
     def get_output(input_layer, weights):  # возращает активированное произведение весов на текущие значения нейронов
-        return 1 / (1 + np.exp(-np.dot(weights, input_layer)))
+        return Brain.activate(np.dot(weights, input_layer))
 
     def get_command(self, players, min_bet, bank, self_player, common_cards, available_commands):
-        input_layer = []  # TODO: шкалировать данные, чтобы отправлять их в нейросеть
-        output1 = Brain.get_output(input_layer, self.weights[0])
+        input_layer = [scale_bank(min_bet, self_player.bank), scale_bank(bank, self_player.bank)] +\
+                      [scale_bank(player.bank, self_player.bank) for player in players] +\
+                      scale_cards(self_player.get_cards()) + scale_cards(common_cards) + [0 for _ in range((5 - len(common_cards)) * 5)] +\
+                      scale_commands([player.last_command for player in players]) + [0 for _ in range((10 - len(players)) * 6)]
+
+        output1 = Brain.get_output(Brain.activate(np.array(input_layer)), self.weights[0])
         output2 = Brain.get_output(output1, self.weights[1])
         output2 = Brain.get_output(output2, self.weights[2])
         output = Brain.get_output(output2, self.weights[3])
