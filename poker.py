@@ -266,7 +266,7 @@ def set_game(reset_players=True):
             names = user_names + names
         players = [Bot(f'BOT_{names[i]}') for i in range(game.SAVABLE["PLAYERS_NUMBER"] - 1)]  # создаем список игроков из ботов
         shuffle_players(players)  # перемешиваем игроков
-        players += [User('USR_User')]  # добавляем в список игроков пользователя, если игра с пользователем
+        if game.GAME_WITH_USER: players += [User('USR_User')]  # добавляем в список игроков пользователя, если игра с пользователем
     set_queue(players, reset_players)  # настраиваем игроков и очередь в конфигах
 
 

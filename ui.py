@@ -149,8 +149,8 @@ def main_menu():
     menu_list['main_menu'].print_menu()
 
 
-def learn_settings_menu():
-    menu_list['learn_settings_menu'].print_menu()
+def train_settings_menu():
+    menu_list['train_settings_menu'].print_menu()
 
 
 def game_settings_menu():
@@ -206,8 +206,8 @@ def export_db_menu():
     menu_list['export_db_menu'].print_menu()
 
 
-def erase_db_menu():
-    menu_list['erase_db_menu'].print_menu()
+def train_initialization_menu():
+    menu_list['train_initialization_menu'].print_menu()
 
 
 def game_initialization_menu():
@@ -278,44 +278,44 @@ def bots_mode_menu():
 
 def learning_bots_number_check(x):
     if not x.isdigit() or x == '':
-        learn_settings_menu()
+        train_settings_menu()
         return True
     elif 1 <= int(x) <= 10:
         game.SAVABLE["PLAYERS_NUMBER"] = int(x)
-        learn_settings_menu()
+        train_settings_menu()
         return True
     return False
 
 
 def series_length_check(x):
     if not x.isdigit() or x == '':
-        learn_settings_menu()
+        train_settings_menu()
         return True
     elif 1 <= int(x) <= 30:
         train_settings.SAVABLE["SERIES_LENGTH"] = int(x)
-        learn_settings_menu()
+        train_settings_menu()
         return True
     return False
 
 
 def series_number_check(x):
     if not x.isdigit() or x == '':
-        learn_settings_menu()
+        train_settings_menu()
         return True
     elif 1 <= int(x) <= 10000000:
         train_settings.SAVABLE["SERIES_NUMBER"] = int(x)
-        learn_settings_menu()
+        train_settings_menu()
         return True
     return False
 
 
 def autosaves_frequency_check(x):
     if not x.isdigit() or x == '':
-        learn_settings_menu()
+        train_settings_menu()
         return True
     elif 1 <= int(x) <= 120:
         train_settings.SAVABLE["AUTOSAVES_FREQUENCY"] = int(x)
-        learn_settings_menu()
+        train_settings_menu()
         return True
     return False
 
@@ -352,10 +352,8 @@ def min_bet_check(x):
 
 
 def rules_check(x):
-    if len(x) >= 0:
-        game_settings_menu()
-        return True
-    return False
+    main_menu()
+    return True
 
 
 def import_db_check(x):
@@ -374,138 +372,81 @@ def export_db_check(x):
     return False
 
 
-def erase_db_check(x):
-    if x == '' or x.lower() in ['y', 'n', 'yes', 'no', 'д', 'н', 'да', 'нет']:
-        # сделать сброс базы данных
-        db_settings_menu()
-        return True
-    return False
-
-
 def main_check(x):
-    if x.isdigit() and 1 <= int(x) <= 3:
-        File.load_settings(game, train_settings)
-        return True
-    main_menu()
-    return False
+    game.GAME_WAS_INITIALIZED = False
+    File.load_settings(game, train_settings)
+    return True
 
 
-def learn_settings_check(x):
-    if x.isdigit() and 1 <= int(x) <= 7:
-        return True
-    learn_settings_menu()
-    return False
+def train_settings_check(x):
+    return True
 
 
 def game_settings_check(x):
-    if x.isdigit() and 1 <= int(x) <= 8:
-        game.GAME_WITH_USER = False
-        game.GAME_WAS_INITIALIZED = False
-        return True
-    game_settings_menu()
-    return False
+    return True
 
 
-def db_settings_check(x):
-    if x.isdigit() and 1 <= int(x) <= 5:
-        return True
-    db_settings_menu()
-    return False
+def train_initialization_check(x):
+    game.GAME_WITH_USER = False
+    poker.set_game(reset_players=not game.GAME_WAS_INITIALIZED)
+    game.GAME_WAS_INITIALIZED = True
+    return True
 
 
 def game_initialization_check(x):
-    if x.isdigit() and 1 <= int(x) <= 3:
-        game.GAME_WITH_USER = True
-        poker.set_game(reset_players=not game.GAME_WAS_INITIALIZED)
-        game.GAME_WAS_INITIALIZED = True
-        return True
-    game_initialization_menu()
-    return False
+    game.GAME_WITH_USER = True
+    poker.set_game(reset_players=not game.GAME_WAS_INITIALIZED)
+    game.GAME_WAS_INITIALIZED = True
+    return True
 
 
 def game_preflop_distribution_check(x):
-    if x.isdigit() and 1 <= int(x) <= 2:
-        return True
-    game_preflop_distribution_menu()
-    return False
+    return True
 
 
 def game_preflop_bet_check(x):
-    x = x.split(' ')
-    if x[0].isdigit() and 1 <= int(x[0]) <= 6:  # TODO: сделать проверку количества опций динамичной
-        return True
-    game_preflop_bet_menu()
-    return False
+    return True
 
 
 def game_flop_distribution_check(x):
-    if x.isdigit() and 1 <= int(x) <= 2:
-        return True
-    game_flop_distribution_menu()
-    return False
+    return True
 
 
 def game_flop_bet_check(x):
-    x = x.split(' ')
-    if x[0].isdigit() and 1 <= int(x[0]) <= 6:
-        return True
-    game_flop_bet_menu()
-    return False
+    return True
 
 
 def game_turn_distribution_check(x):
-    if x.isdigit() and 1 <= int(x) <= 2:
-        return True
-    game_turn_distribution_menu()
-    return False
+    return True
 
 
 def game_turn_bet_check(x):
-    x = x.split(' ')
-    if x[0].isdigit() and 1 <= int(x[0]) <= 6:
-        return True
-    game_turn_bet_menu()
-    return False
+    return True
 
 
 def game_river_distribution_check(x):
-    if x.isdigit() and 1 <= int(x) <= 2:
-        return True
-    game_river_distribution_menu()
-    return False
+    return True
 
 
 def game_river_bet_check(x):
-    x = x.split(' ')
-    if x[0].isdigit() and 1 <= int(x[0]) <= 6:
-        return True
-    game_river_bet_menu()
-    return False
+    return True
 
 
 def game_showdown_check(x):
-    if x.isdigit() and 1 <= int(x) <= 2:
-        return True
-    game_showdown_menu()
-    return False
+    return True
 
 
 def pause_rules_check(x):
-    if len(x) >= 0:
-        game_pause_menu()
-        return True
-    return False
+    game_pause_menu()
+    return True
 
 
 def bots_mode_check(x):
-    if x.isdigit() and 1 <= int(x) <= 3:
-        if int(x) == 1: game.SAVABLE["BOTS_MODE"] = 'passive'
-        elif int(x) == 2: game.SAVABLE["BOTS_MODE"] = 'random'
-        elif int(x) == 3: game.SAVABLE["BOTS_MODE"] = 'trained'
-        game_settings_menu()
-        return True
+    if int(x) == 1: game.SAVABLE["BOTS_MODE"] = 'passive'
+    elif int(x) == 2: game.SAVABLE["BOTS_MODE"] = 'random'
+    elif int(x) == 3: game.SAVABLE["BOTS_MODE"] = 'trained'
     game_settings_menu()
-    return False
+    return True
 
 
 def min_bank_check(x):
@@ -520,33 +461,36 @@ def min_bank_check(x):
 menu_list = {
     # '': Menu('', [], TextInput('', lambda x: x)),
     'main_menu': Menu('Главное меню:', [
-        ['Игра с ботами', game_settings_menu],
-        ['Обучение ботов', learn_settings_menu],
+        ['Создать игру', game_initialization_menu],
+        ['Создать тренировку', train_initialization_menu],
+        ['Настройки игры', game_settings_menu],
+        ['Правила игры', rules_menu],
         ['Завершение программы', exit]
     ], TextInput('Выберите номер команды: ', main_check)),
 
-    'learn_settings_menu': Menu('Настройки обучения:', [
-        ['Настройки базы данных', db_settings_menu],
-        ['Количество ботов', learning_players_number_menu],
+    'train_settings_menu': Menu('Настройки обучения:', [
         ['Длина серии игр', series_length_menu],
-        ['Количество обучающих серий', series_number_menu],
+        ['Количество серий игр', series_number_menu],
         ['Частота автосохранений', autosaves_frequency_menu],
-        ['Начать обучение', start_learning_menu],
+        ['Импорт базы данных', import_db_menu],
+        ['Экспорт базы данных', export_db_menu],
+        ['Вернуться в Настройки игры', game_settings_menu],
         ['Вернуться в Главное меню', main_menu]
-    ], TextInput('Выберите номер команды: ', learn_settings_check)),
+    ], TextInput('Выберите номер команды: ', train_settings_check)),
     'learning_players_number_menu': Menu(lambda: f'Настройки обучения: Количество ботов - {game.SAVABLE["PLAYERS_NUMBER"]}', [], TextInput('Введите количество ботов (1-10): ', learning_bots_number_check)),
     'series_length_menu': Menu(lambda: f'Настройки обучения: Длина серии игр - {train_settings.SAVABLE["SERIES_LENGTH"]}', [], TextInput('Введите длину серии игр (1-30): ', series_length_check)),
     'series_number_menu': Menu(lambda: f'Настройки обучения: Количество серий игр - {train_settings.SAVABLE["SERIES_NUMBER"]}', [], TextInput('Введите количество обучающих серий (1-10000000): ', series_number_check)),
     'autosaves_frequency_menu': Menu(lambda: f'Настройки обучения: Частота автосохранений - {train_settings.SAVABLE["AUTOSAVES_FREQUENCY"]}', [], TextInput('Введите частоту автосохранений (до 120 минут): ', autosaves_frequency_check)),
+    'import_db_menu': Menu(lambda: f'Настройки базы данных: Путь до последнего импортированного файла базы данных - {train_settings.SAVABLE["IMPORT_PATH"]}', [], TextInput('Введите путь до импортируемой базы данных: ', import_db_check)),
+    'export_db_menu': Menu(lambda: f'Настройки базы данных: Путь до последнего экпортированного файла базы данных - {train_settings.SAVABLE["EXPORT_PATH"]}', [], TextInput('Введите путь сохранения базы данных: ', export_db_check)),
 
     'game_settings_menu': Menu('Настройки игры:', [
-        ['Создать игру', game_initialization_menu],
         ['Минимальная ставка', min_bet_menu],
         ['Минимальный банк игроков', min_bank_menu],
         ['Количество игроков', players_number_menu],
         ['Сложность ботов', bots_mode_menu],
         ['Имена ботов', bots_names_menu],
-        ['Правила игры', rules_menu],
+        ['Настройки обучения', train_settings_menu],
         ['Вернуться в Главное меню', main_menu]
     ], TextInput('Выберите номер команды: ', game_settings_check)),
     'players_number_menu': Menu(lambda: f'Настройки игры: Количество игроков - {game.SAVABLE["PLAYERS_NUMBER"]}', [], TextInput('Введите количество игроков (2-10): ', bots_number_check)),
@@ -560,20 +504,12 @@ menu_list = {
         ['Обученные боты', game_settings_menu]
     ], TextInput('Введите номер уровня сложности: ', bots_mode_check)),
 
-    'db_settings_menu': Menu('Настройки базы данных', [
-        ['Импорт базы данных', import_db_menu],
-        ['Экспорт базы данных', export_db_menu],
-        ['Очистка базы данных', erase_db_menu],
-        ['Вернуться в Настройки обучения', game_settings_menu],
+    'train_initialization_menu': Menu(lambda: f'Инициализация тренировки\nКоличество игроков: {game.SAVABLE["PLAYERS_NUMBER"]}\nОбщее число игр: {train_settings.SAVABLE["SERIES_LENGTH"] * train_settings.SAVABLE["SERIES_NUMBER"]}\nЧастота автосохранений: {train_settings.SAVABLE["AUTOSAVES_FREQUENCY"]}', [
+        ['Начать тренировку', get_round_menu(0)],
         ['Вернуться в Главное меню', main_menu],
-    ], TextInput('Выберите номер команды: ', db_settings_check)),
-    'import_db_menu': Menu(lambda: f'Настройки базы данных: Путь до последнего импортированного файла базы данных - {train_settings.SAVABLE["IMPORT_PATH"]}', [], TextInput('Введите путь до импортируемой базы данных: ', import_db_check)),
-    'export_db_menu': Menu(lambda: f'Настройки базы данных: Путь до последнего экпортированного файла базы данных - {train_settings.SAVABLE["EXPORT_PATH"]}', [], TextInput('Введите путь сохранения базы данных: ', export_db_check)),
-    'erase_db_menu': Menu(lambda: f'Настройки базы данных: Очистка файла базы данных - {train_settings.SAVABLE["IMPORT_PATH"]}', [], TextInput('Файл базы данных будет очищен. Вы уверены? ', erase_db_check)),
-
+    ], TextInput('Введите номер команды: ', train_initialization_check)),
     'game_initialization_menu': Menu(lambda: f'Инициализация игры\nКоличество игроков: {game.SAVABLE["PLAYERS_NUMBER"]}\nМинимальная ставка: {game.SAVABLE["GAME_MIN_BET"]}\nСложность ботов: {get_bots_mode_string()}', [
         ['Начать игру', get_round_menu(0)],
-        ['Вернуться к Настройкам игры', game_settings_menu],
         ['Вернуться в Главное меню', main_menu],
     ], TextInput('Введите номер команды: ', game_initialization_check)),
 

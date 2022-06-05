@@ -23,6 +23,7 @@ class Menu:
             options_str += f'{i + 1}. {self.get_options()[i].get_text()}\n'
         print('\n' + options_str + '\n')
         answer = self.text_input.print_input().split(' ')
+        if not (answer[0].isdigit() and 1 <= int(answer[0]) <= len(self.get_options())): return self.print_menu()
         if len(answer) == 1: self.get_options()[int(answer[0]) - 1].callback()  # если функция проверки возвращает только один параметр, то просто вызываем колбэк
         else: self.get_options()[int(answer[0]) - 1].callback(answer)  # если функция проверки возвращает больше параметров, то отдаем их полностью в виде списка
 
